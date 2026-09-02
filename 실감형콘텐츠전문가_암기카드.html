@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>실감형 콘텐츠 전문가 · 암기카드</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #121316;
+    --bg-raise: #1b1d22;
+    --bg-card: #f4f1ea;
+    --ink: #eeece5;
+    --ink-dim: #a6a49c;
+    --hairline: #34363c;
+    --accent: #e0473b;
+    --accent-dim: #8a2c26;
+    --gold: #d9a441;
+    --ok: #4f9d69;
+    --ok-bg: #1c2a20;
+    --bad: #d1554a;
+    --bad-bg: #2b1c1b;
+    --radius: 14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Noto Sans KR', sans-serif;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap{
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 28px 20px 60px;
+    min-height: 100vh;
+  }
+
+  /* ---------- Top brand ---------- */
+  .brand{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    margin-bottom: 22px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .brand-badge{
+    font-family:'Black Han Sans', sans-serif;
+    font-size: 15px;
+    letter-spacing: 0.5px;
+    color: var(--bg);
+    background: var(--accent);
+    padding: 4px 10px;
+    border-radius: 4px;
+    display:inline-block;
+  }
+  .brand-title{
+    font-family:'Black Han Sans', sans-serif;
+    font-size: 22px;
+    letter-spacing: 0.5px;
+    margin-left: 10px;
+  }
+  .brand-sub{ color: var(--ink-dim); font-size: 12.5px; }
+
+  h1{ font-family:'Black Han Sans', sans-serif; font-weight:400; }
+
+  /* ---------- Screens ---------- */
+  .screen{ display:none; }
+  .screen.active{ display:block; }
+
+  /* ---------- Setup: scope tree ---------- */
+  .section-label{
+    font-size: 13px;
+    color: var(--gold);
+    font-weight: 700;
+    margin: 26px 0 10px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .section-label::after{
+    content:"";
+    flex:1;
+    height:1px;
+    background: var(--hairline);
+  }
+
+  .all-btn{
+    width:100%;
+    text-align:left;
+    background: var(--bg-raise);
+    border: 1px solid var(--hairline);
+    color: var(--ink);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    cursor:pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 15px;
+    font-weight:700;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    transition: border-color .15s ease, background .15s ease;
+  }
+  .all-btn:hover{ border-color: var(--accent); }
+  .all-btn .count{ color: var(--ink-dim); font-weight:400; font-size:13px;}
+  .all-btn.selected{ border-color: var(--accent); background: #241a17; }
+
+  .tree{ display:flex; flex-direction:column; gap:8px; }
+  .subject-block{
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius);
+    overflow:hidden;
+    background: var(--bg-raise);
+  }
+  .node-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding: 12px 14px;
+    cursor:pointer;
+    user-select:none;
+  }
+  .node-row:hover{ background: rgba(255,255,255,0.03); }
+  .node-row .chev{
+    width:16px; height:16px; flex:none;
+    display:flex; align-items:center; justify-content:center;
+    transition: transform .15s ease;
+    color: var(--ink-dim);
+    font-size:11px;
+  }
+  .node-row.open .chev{ transform: rotate(90deg); }
+  .node-text{ flex:1; font-size: 14.5px; }
+  .node-pick{
+    flex:none;
+    font-size: 11.5px;
+    color: var(--ink-dim);
+    border: 1px solid var(--hairline);
+    padding: 3px 9px;
+    border-radius: 999px;
+    background:transparent;
+    cursor:pointer;
+  }
+  .node-pick:hover{ border-color: var(--accent); color: var(--ink); }
+  .node-pick.selected{ border-color: var(--accent); background: var(--accent); color:#fff; }
+  .node-count{ font-size:12px; color: var(--ink-dim); flex:none; min-width:34px; text-align:right;}
+
+  .subject-row .node-text{ font-weight:700; font-size:15px; }
+  .unit-list{ display:none; padding: 0 0 6px 14px; border-top:1px solid var(--hairline);}
+  .unit-list.open{ display:block; }
+  .unit-row .node-text{ font-weight:600; }
+  .sub-list{ display:none; padding-left: 18px; }
+  .sub-list.open{ display:block; }
+  .sub-row .node-text{ font-size:13.5px; color: var(--ink-dim); }
+  .sub-row.node-row{ padding: 9px 14px; }
+
+  /* ---------- Direction + start ---------- */
+  .dir-options{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .dir-card{
+    border: 1px solid var(--hairline);
+    background: var(--bg-raise);
+    border-radius: var(--radius);
+    padding: 16px;
+    cursor:pointer;
+    transition: border-color .15s ease;
+  }
+  .dir-card:hover{ border-color: var(--accent-dim); }
+  .dir-card.selected{ border-color: var(--accent); background: #241a17; }
+  .dir-card .dlabel{ font-weight:700; font-size:14px; margin-bottom:4px;}
+  .dir-card .ddesc{ font-size:12px; color: var(--ink-dim); line-height:1.5;}
+
+  .start-bar{
+    margin-top: 28px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap: 16px;
+  }
+  .selection-summary{ font-size: 13px; color: var(--ink-dim); }
+  .selection-summary b{ color: var(--ink); }
+  .start-btn{
+    font-family:'Black Han Sans', sans-serif;
+    font-size: 17px;
+    letter-spacing:0.5px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    padding: 14px 30px;
+    cursor:pointer;
+    transition: transform .1s ease, background .15s ease;
+    flex:none;
+  }
+  .start-btn:hover{ background:#c93c31; }
+  .start-btn:active{ transform: scale(0.97); }
+  .start-btn:disabled{ background: var(--hairline); color: var(--ink-dim); cursor:not-allowed; }
+
+  /* ---------- Study screen ---------- */
+  .study-top{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom: 14px;
+  }
+  .back-link{
+    color: var(--ink-dim);
+    font-size: 13px;
+    cursor:pointer;
+    border:none;
+    background:none;
+    padding:6px 0;
+    font-family:'Noto Sans KR',sans-serif;
+  }
+  .back-link:hover{ color: var(--ink); }
+  .progress-text{ font-size: 13px; color: var(--ink-dim); font-variant-numeric: tabular-nums;}
+  .progress-track{
+    height: 4px;
+    background: var(--hairline);
+    border-radius: 999px;
+    overflow:hidden;
+    margin-bottom: 22px;
+  }
+  .progress-fill{
+    height:100%;
+    background: var(--accent);
+    width:0%;
+    transition: width .25s ease;
+  }
+
+  .card-scope{
+    font-size: 11.5px;
+    color: var(--gold);
+    text-align:center;
+    margin-bottom: 10px;
+    letter-spacing: 0.3px;
+  }
+
+  .flip-stage{
+    perspective: 1600px;
+    height: 360px;
+    margin-bottom: 20px;
+  }
+  .flip-card{
+    position: relative;
+    width:100%;
+    height:100%;
+    cursor:pointer;
+    transform-style: preserve-3d;
+    transition: transform .45s cubic-bezier(.2,.8,.3,1);
+  }
+  .flip-card.flipped{ transform: rotateY(180deg); }
+  .face{
+    position:absolute;
+    inset:0;
+    backface-visibility:hidden;
+    border-radius: 20px;
+    background: var(--bg-card);
+    color: #1c1c1a;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    padding: 34px 30px;
+    box-shadow: 0 18px 40px rgba(0,0,0,0.35);
+    border: 1px solid rgba(0,0,0,0.06);
+  }
+  .face .kicker{
+    position:absolute;
+    top:18px; left:22px;
+    font-size:11px;
+    letter-spacing:0.6px;
+    color:#8a8776;
+    font-weight:700;
+  }
+  .face .tap-hint{
+    position:absolute;
+    bottom:16px; right:20px;
+    font-size:10.5px;
+    color:#a5a290;
+  }
+  .face-front .qtext{
+    font-size: 19px;
+    font-weight: 700;
+    line-height: 1.55;
+  }
+  .face-back{ transform: rotateY(180deg); }
+  .face-back .atext{
+    font-family:'Black Han Sans', sans-serif;
+    font-size: 26px;
+    color: var(--accent-dim);
+    margin-bottom: 14px;
+    line-height:1.4;
+  }
+  .face-back .explain{
+    font-size: 13.5px;
+    color: #55524a;
+    line-height: 1.6;
+    max-height: 150px;
+    overflow-y:auto;
+  }
+
+  .judge-row{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .judge-btn{
+    font-family:'Noto Sans KR', sans-serif;
+    font-weight:700;
+    font-size: 15px;
+    padding: 16px;
+    border-radius: 14px;
+    border: 1px solid var(--hairline);
+    background: var(--bg-raise);
+    color: var(--ink);
+    cursor:pointer;
+    transition: transform .08s ease, border-color .15s ease;
+  }
+  .judge-btn:active{ transform: scale(0.97); }
+  .judge-btn.no{ border-color: var(--bad); color: #f0a49d; }
+  .judge-btn.no:hover{ background: var(--bad-bg); }
+  .judge-btn.yes{ border-color: var(--ok); color: #a9d6b8; }
+  .judge-btn.yes:hover{ background: var(--ok-bg); }
+  .judge-hint{
+    text-align:center;
+    font-size:12px;
+    color: var(--ink-dim);
+    margin-top:14px;
+  }
+
+  /* ---------- Result screen ---------- */
+  .result-hero{
+    text-align:center;
+    padding: 30px 10px 10px;
+  }
+  .result-num{
+    font-family:'Black Han Sans', sans-serif;
+    font-size: 56px;
+    color: var(--accent);
+    line-height:1;
+  }
+  .result-label{ color: var(--ink-dim); font-size:14px; margin-top:6px;}
+  .result-split{
+    display:flex;
+    justify-content:center;
+    gap: 34px;
+    margin: 26px 0 8px;
+  }
+  .result-split div{ text-align:center; }
+  .result-split .n{ font-size: 24px; font-weight:700; }
+  .result-split .l{ font-size:12px; color:var(--ink-dim); margin-top:2px;}
+  .ok-color{ color: var(--ok); }
+  .bad-color{ color: var(--bad); }
+
+  .result-actions{
+    display:flex;
+    flex-direction:column;
+    gap: 10px;
+    margin-top: 30px;
+  }
+  .rbtn{
+    font-family:'Noto Sans KR', sans-serif;
+    font-size: 15px;
+    font-weight:700;
+    padding: 15px;
+    border-radius: 999px;
+    border: none;
+    cursor:pointer;
+    text-align:center;
+  }
+  .rbtn.primary{ background: var(--accent); color:#fff; }
+  .rbtn.primary:hover{ background:#c93c31; }
+  .rbtn.secondary{ background: var(--bg-raise); color: var(--ink); border:1px solid var(--hairline); }
+  .rbtn.secondary:hover{ border-color: var(--accent); }
+  .rbtn:disabled{ opacity:0.4; cursor:not-allowed; }
+
+  @media (max-width: 480px){
+    .flip-stage{ height: 400px; }
+    .face-front .qtext{ font-size:17px; }
+    .face-back .atext{ font-size:22px; }
+    .dir-options{ grid-template-columns: 1fr; }
+    .start-bar{ flex-direction:column; align-items:stretch; }
+    .start-btn{ width:100%; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="brand">
+    <div>
+      <span class="brand-badge">3급</span><span class="brand-title">실감형 콘텐츠 전문가</span>
+      <div class="brand-sub">암기카드 · Quizlet 스타일</div>
+    </div>
+  </div>
+
+  <!-- ============ SETUP SCREEN ============ -->
+  <div id="screen-setup" class="screen active">
+
+    <div class="section-label">학습 범위</div>
+    <button class="all-btn" id="all-btn" data-scope-type="all">
+      <span>전체 문제</span>
+      <span class="count" id="all-count">0문항</span>
+    </button>
+
+    <div class="tree" id="tree" style="margin-top:10px;"></div>
+
+    <div class="section-label">학습 방향</div>
+    <div class="dir-options">
+      <div class="dir-card selected" data-dir="qa" id="dir-qa">
+        <div class="dlabel">문제 → 정답</div>
+        <div class="ddesc">질문을 보고 정답을 떠올려요. (정답 암기 모드)</div>
+      </div>
+      <div class="dir-card" data-dir="aq" id="dir-aq">
+        <div class="dlabel">정답 → 문제</div>
+        <div class="ddesc">정답(용어)을 보고 어떤 질문인지 떠올려요. (용어 암기 모드)</div>
+      </div>
+    </div>
+
+    <div class="section-label">카드 순서</div>
+    <div class="dir-options">
+      <div class="dir-card selected" data-shuffle="1" id="shuffle-on">
+        <div class="dlabel">순서 섞기</div>
+        <div class="ddesc">매 학습마다 카드 순서를 랜덤으로 섞어요.</div>
+      </div>
+      <div class="dir-card" data-shuffle="0" id="shuffle-off">
+        <div class="dlabel">원래 순서</div>
+        <div class="ddesc">문항 번호 순서대로 학습해요.</div>
+      </div>
+    </div>
+
+    <div class="start-bar">
+      <div class="selection-summary" id="selection-summary">범위를 선택하세요</div>
+      <button class="start-btn" id="start-btn" disabled>학습 시작</button>
+    </div>
+  </div>
+
+  <!-- ============ STUDY SCREEN ============ -->
+  <div id="screen-study" class="screen">
+    <div class="study-top">
+      <button class="back-link" id="quit-btn">← 범위 다시 선택</button>
+      <div class="progress-text" id="progress-text">1 / 1</div>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+    <div class="card-scope" id="card-scope"></div>
+
+    <div class="flip-stage">
+      <div class="flip-card" id="flip-card">
+        <div class="face face-front">
+          <span class="kicker" id="front-kicker">문제</span>
+          <div class="qtext" id="front-text"></div>
+          <span class="tap-hint">탭하여 뒤집기</span>
+        </div>
+        <div class="face face-back">
+          <span class="kicker" id="back-kicker">정답</span>
+          <div class="atext" id="back-text"></div>
+          <div class="explain" id="back-explain"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="judge-row">
+      <button class="judge-btn no" id="judge-no">✕ 모르겠어요</button>
+      <button class="judge-btn yes" id="judge-yes">✓ 알아요</button>
+    </div>
+    <div class="judge-hint">카드를 탭하면 뒤집혀요 · 스페이스바로도 뒤집을 수 있어요</div>
+  </div>
+
+  <!-- ============ RESULT SCREEN ============ -->
+  <div id="screen-result" class="screen">
+    <div class="result-hero">
+      <div class="result-num" id="result-total">0</div>
+      <div class="result-label">문제를 학습했어요</div>
+      <div class="result-split">
+        <div><div class="n ok-color" id="result-ok">0</div><div class="l">알아요</div></div>
+        <div><div class="n bad-color" id="result-bad">0</div><div class="l">모르겠어요</div></div>
+      </div>
+    </div>
+    <div class="result-actions">
+      <button class="rbtn primary" id="retry-wrong">틀린 문제만 다시 학습</button>
+      <button class="rbtn secondary" id="retry-all">이번 범위 처음부터 다시</button>
+      <button class="rbtn secondary" id="back-to-setup">범위 다시 선택</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const RAW_DATA = [{"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-1. 가상현실 기반 시스템 설정", "num": 1, "q": "HMD의 주요 기능은 무엇인가?", "a": "입체감과 몰입감 제공", "explain": "HMD(Head Mounted Device)는 입체감과 몰입감을 제공하는 디스플레이 장치입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-1. 가상현실 기반 시스템 설정", "num": 2, "q": "360도 VR 영상 제작에서 '스티칭' 작업의 목적은 무엇인가?", "a": "여러 영상들을 하나로 합치기 위해", "explain": "360도 VR 영상 제작에서 '스티칭' 작업은 여러 영상들을 하나로 합치는 작업입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-1. 가상현실 기반 시스템 설정", "num": 3, "q": "HMD(Head Mounted Display)가 다른 디스플레이보다 압도적인 몰입감을 제공하는 핵심 기술은?", "a": "스테레오스코피", "explain": "스테레오스코피 기술을 사용하여 입체감을 주고 넓은 시야각을 통해 현장감을 증대시키기 때문입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-1. 가상현실 기반 시스템 설정", "num": 4, "q": "360도 VR 영상의 원본이 4K 화질임에도 사용자가 느끼는 체감 화질이 떨어지는 이유는?", "a": "360도 영상을 약 120도 시야각으로 재현해야 하기 때문", "explain": "360도 전체 영상을 좁은 시야각(약 120도)으로 나누어 보여주며, 3D의 경우 두 화면을 담아야 하므로 화질이 분산됩니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-1. 가상현실 기반 시스템 설정", "num": 5, "q": "구글 카드보드(Cardboard)에서 컨트롤러 역할을 하는 자석이 상호작용하는 스마트폰의 센서는?", "a": "지자기 센서", "explain": "자석을 움직이면 스마트폰의 지자기 센서에 신호를 주어 조작이 가능하게 합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-1. 가상현실 기반 시스템 설정", "num": 6, "q": "삼성 기어 VR의 조작 방식 중 본체 우측면에 위치하여 메뉴 조작을 돕는 방식은?", "a": "터치패드 방식", "explain": "기어 VR은 우측면에 터치패드, 취소 버튼, 볼륨 버튼을 달아 편리한 조작을 지원합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-1. 가상현실 기반 시스템 설정", "num": 7, "q": "PC 기반 VR 기기인 오큘러스 리프트(Oculus Rift)의 위치 추적 방식은?", "a": "외부 스탠드형 적외선 LED 센서", "explain": "오큘러스 리프트는 기기 내 센서를 외부 스탠드형 적외선 LED 장치를 통해 추적하는 방식을 사용합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-1. 가상현실 기반 시스템 설정", "num": 8, "q": "손목의 각도 변화와 같은 미세한 움직임까지 감지하여 정교한 조작을 가능하게 하는 방식은?", "a": "모션 컨트롤러 방식", "explain": "모션 컨트롤러는 상하좌우뿐만 아니라 손목 각도 등 미세한 움직임도 잡아내어 실감 나는 조작을 제공합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-1. 가상현실 기반 시스템 설정", "num": 9, "q": "구글 글라스(Google Glass)의 주요 작동 및 명령 전달 방식은?", "a": "음성 명령", "explain": "구글 글라스는 안드로이드 운영체제를 기반으로 음성 명령을 통해 작동합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-1. 가상현실 기반 시스템 설정", "num": 10, "q": "현실 화면에 실제 객체의 스캔된 3D 이미지를 출력하고 자유롭게 조작하는 혼합현실(MR) 기기는?", "a": "마이크로소프트 홀로렌즈", "explain": "홀로렌즈는 윈도 홀로그래픽 기술을 이용해 가상 물체를 현실 공간에 겹쳐 조작하는 혼합 현실을 제공합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-1. 가상현실 기반 시스템 설정", "num": 11, "q": "홀로렌즈(Hololens)가 다른 디스플레이 헤드셋과 차별화되는 하드웨어적 특징은?", "a": "윈도 PC 기능 완전 내장", "explain": "홀로렌즈는 다른 기기에 연결하는 헤드셋이 아니라 윈도 PC 기능을 완전히 내장한 독립형 기기입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-1. 가상현실 기반 시스템 설정", "num": 12, "q": "3차원 현실 공간의 객체를 가상현실에 구현하는 '룸스케일 모션 트래킹' 기능이 탑재된 폼팩터는?", "a": "스팀 VR", "explain": "스팀 VR은 정확한 위치 추적을 위한 룸스케일 모션 트래킹 기능을 탑재한 것이 특징입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-1. 가상현실 기반 시스템 설정", "num": 13, "q": "구글 데이드림 뷰2에 적용된 기술로, 사용자의 머리 위치와 주변 공간을 측정하는 기술은?", "a": "월드센스", "explain": "데이드림 뷰2는 월드센스 기술을 통해 머리 위치와 움직임을 측정하여 현실감을 높입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-1. 가상현실 기반 시스템 설정", "num": 14, "q": "가상현실 시스템 설정 수행 시 HMD 사용자가 가장 주의해야 할 안전 사항은?", "a": "시야 차단으로 인한 충돌 및 부상", "explain": "HMD는 시야를 완전히 가리므로 주변 장애물에 부딪히거나 넘어지지 않도록 주의해야 합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-1. 가상현실 기반 시스템 설정", "num": 15, "q": "콘텐츠 구현 장비를 선택할 때 고려해야 할 가상현실의 두 가지 주요 특징은?", "a": "몰입감과 상호작용", "explain": "장비 선택 시 콘셉트에 맞춰 몰입감과 상호작용이 효과적으로 구현되는지 고려해야 합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-1. 가상현실 기반 시스템 설정", "num": 16, "q": "영상 제작 과정 중 '기획'이 포함되는 단계는?", "a": "프리프로덕션", "explain": "기획은 영상 제작의 사전 제작 단계인 프리프로덕션에 해당합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-1. 가상현실 기반 시스템 설정", "num": 17, "q": "VR 콘텐츠 기획 시 기술적 요소보다 우선시되어야 할 핵심 성공 요인은?", "a": "사용자의 니즈 파악과 스토리텔링", "explain": "화려한 기술보다 사용자가 원하는 것을 파악하고 명확한 스토리텔링을 제공하는 것이 중요합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-1. 가상현실 기반 시스템 설정", "num": 18, "q": "여러 카메라로 촬영한 영상들이 겹치는 부분을 붙여 하나의 영상으로 만드는 작업을 무엇이라 하는가?", "a": "스티칭", "explain": "스티칭은 각각의 카메라로 촬영한 영상의 겹치는 부분을 이어 붙여 360도 영상으로 완성하는 과정입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-1. 가상현실 기반 시스템 설정", "num": 19, "q": "180도 VR 영상 제작 시 주로 사용되는 렌즈의 종류는?", "a": "어안 렌즈", "explain": "180도 촬영에는 화각이 180도를 넘는 광각 렌즈인 어안 렌즈가 주로 사용됩니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-1. 가상현실 기반 시스템 설정", "num": 20, "q": "360도 원통형 VR 영상 촬영 시 카메라가 없는 바닥과 천장 영역의 일반적인 처리 방법은?", "a": "특정 로고 삽입 또는 검은색 처리", "explain": "원통형 촬영 시 바닥과 천장은 특정 로고를 넣거나 검은색으로 처리하는 경우가 많습니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-1. 가상현실 기반 시스템 설정", "num": 21, "q": "실제 사람의 두 눈으로 보는 것과 같은 입체감을 주기 위해 양안 시차를 이용하는 영상 방식은?", "a": "S3D", "explain": "S3D 영상은 좌우 영상의 시차(양안 시차)를 이용하여 3차원적인 입체감을 제공합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-1. 가상현실 기반 시스템 설정", "num": 22, "q": "S3D 입체 작업 시 좌우 카메라의 시차 오류, 색 차이 등을 수정하여 일치시키는 작업은?", "a": "스위트닝", "explain": "스위트닝은 좌우 카메라의 틀어짐, 색 차이 등을 수정하여 일치시키는 후반 작업입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-1. 가상현실 기반 시스템 설정", "num": 23, "q": "하나의 콘텐츠를 제작하여 다양한 플랫폼에서 활용하는 전략을 무엇이라 하는가?", "a": "원소스 멀티유즈", "explain": "동일한 주제의 콘텐츠를 여러 플랫폼에서 활용하는 것을 원소스 멀티유즈라고 합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-1. 가상현실 기반 시스템 설정", "num": 24, "q": "기획안 작성 요령 중 'Why' 단계에서 검토해야 할 요소가 아닌 것은?", "a": "연출료 세부 내역", "explain": "'Why' 단계는 제작 목적과 적합성을 검토하는 단계이며, 구체적인 예산 내역은 'How' 단계에 해당합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-1. 가상현실 기반 시스템 설정", "num": 25, "q": "기획안의 'How' 단계에서 구체적으로 서술해야 하는 내용은?", "a": "제작 일정 및 예산", "explain": "'How' 단계는 누가, 어떤 장비로, 언제까지, 얼마의 예산으로 제작할지 실행 계획을 세우는 단계입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-1. 가상현실 기반 시스템 설정", "num": 26, "q": "기획안 작성 시 핵심 내용을 효과적으로 전달하기 위해 활용해야 할 도구가 아닌 것은?", "a": "원문 전체 복사", "explain": "복잡한 텍스트보다는 시각적 도구(이미지, 도표 등)를 활용해 쉽게 이해할 수 있게 작성해야 합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-1. 가상현실 기반 시스템 설정", "num": 27, "q": "흥행하는 영상 작품의 제목(타이틀) 선정 시 일반적으로 권장되는 글자 수는?", "a": "4음절 미만", "explain": "대다수 흥행한 작품들은 기억되기 쉬운 4음절 미만의 제목이 많습니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-1. 가상현실 기반 시스템 설정", "num": 28, "q": "콘텐츠 기획 시 주요 소비층을 구분하여 작성하는 항목은?", "a": "타깃 선정", "explain": "소비자층을 메인 타깃과 서브 타깃으로 구분하여 전략을 세워야 합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-1. 가상현실 기반 시스템 설정", "num": 29, "q": "기획 의도를 어떻게 스토리로 전개할 것인지 짧고 간략하게 표현한 것은?", "a": "시놉시스", "explain": "시놉시스는 기획 의도를 바탕으로 영상의 전체적인 줄거리를 요약한 것입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-1. 가상현실 기반 시스템 설정", "num": 30, "q": "예산 작성 시 신뢰도를 높이기 위해 피해야 할 행동은?", "a": "터무니없는 금액 작성", "explain": "터무니없는 금액 설정은 전문성과 신뢰도를 떨어뜨립니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-2. 가상현실 기반 시스템 설계", "num": 1, "q": "작업 진행의 기준이 되는 절차이자, 개발 과정의 설계도 역할을 하는 개념은?", "a": "워크플로", "explain": "워크플로는 작업 또는 업무를 진행하는 기준이 되는 작업 절차이며 개발 설계도 역할도 합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-2. 가상현실 기반 시스템 설계", "num": 2, "q": "워크플로 설계를 시각적으로 표현하기 위해 가장 일반적으로 사용하는 도구는?", "a": "다이어그램", "explain": "워크플로는 정보를 시각적으로 표현하기 위해 다이어그램을 사용하여 도식으로 표현하는 것이 일반적입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-2. 가상현실 기반 시스템 설계", "num": 3, "q": "마이크로소프트에서 제작하였으며 다양한 템플릿을 제공하는 워크플로 제작 도구는?", "a": "Visio", "explain": "Visio는 마이크로소프트에서 제작한 프로그램으로 워크플로를 다양한 다이어그램을 손쉽게 제작하게 해줍니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-2. 가상현실 기반 시스템 설계", "num": 4, "q": "무료 소프트웨어이며 틀이 단순하고 사용하기 쉬워 널리 사용되는 다이어그램 제작 툴은?", "a": "디아 다이어그램", "explain": "디아 다이어그램은 다양한 다이어그램을 제작할 수 있는 무료 소프트웨어이며 틀이 단순하여 널리 사용됩니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-2. 가상현실 기반 시스템 설계", "num": 5, "q": "별도의 설치 없이 웹 브라우저에서 사용할 수 있는 다이어그램 제작 툴은?", "a": "Draw.io", "explain": "Draw.io는 웹브라우저에서 사용할 수 있는 다이어그램 제작 툴로 설치 없이 사용할 수 있다는 장점이 있습니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-2. 가상현실 기반 시스템 설계", "num": 6, "q": "콘텐츠 기획에서 리소스(Resources)의 정의로 가장 적절한 것은?", "a": "제작에 사용되는 자원(이미지, 3D 모델 등)", "explain": "리소스란 제작 콘텐츠에서 사용될 여러 자원(이미지 파일, 3D 모델링, 음원 등)을 뜻합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-2. 가상현실 기반 시스템 설계", "num": 7, "q": "리소스를 직접 제작할 때의 장점으로 옳은 것은?", "a": "리소스 품질의 효율적 관리 및 이슈 대처 가능", "explain": "리소스 제작 시 필요한 리소스를 직접 만들기 때문에 품질을 높이는 데 효율적이며 이슈에 빠르게 대처할 수 있습니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-2. 가상현실 기반 시스템 설계", "num": 8, "q": "온라인 상점에서 리소스를 구매하여 사용할 때의 단점은?", "a": "전체적인 분위기가 어우러지지 않을 수 있음", "explain": "온라인 상점에서 판매되는 리소스는 제작 중인 콘텐츠에 적합하지 않거나 분위기에 어우러지지 못할 수 있습니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-2. 가상현실 기반 시스템 설계", "num": 9, "q": "어도비에서 개발하였으며 주로 가상현실의 텍스처(Texture)를 생성하는 데 사용되는 툴은?", "a": "Photoshop", "explain": "포토샵은 이미지를 만들어낼 수 있는 저작 도구이며 주로 VR 공간 구성의 텍스처 생성에 사용됩니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-2. 가상현실 기반 시스템 설계", "num": 10, "q": "3D 그래픽스에서 모델링의 질감을 표현하거나 입체감 정보를 저장하는 이미지는?", "a": "텍스처", "explain": "텍스처는 모델링의 질감을 표현하는 이미지이며, 입체감 등 부가 정보를 저장하는 데이터 버퍼 역할도 합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-2. 가상현실 기반 시스템 설계", "num": 11, "q": "포토샵을 대체할 수 있는 유용한 무료 이미지 편집 툴은?", "a": "GIMP", "explain": "GIMP는 포토샵과 같은 이미지 생성 및 편집용 그래픽 툴이며 무료로 제공됩니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-2. 가상현실 기반 시스템 설계", "num": 12, "q": "Autodesk 사의 제품으로 전 세계적으로 가장 많이 사용되는 3D 모델링 저작 도구는?", "a": "3DS MAX", "explain": "3DS MAX는 Autodesk에서 내놓은 툴로 전 세계적으로 가장 많이 사용되는 3D 저작 도구입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-2. 가상현실 기반 시스템 설계", "num": 13, "q": "무료로 사용 가능하며 게임 엔진들과의 호환성이 좋은 3D 그래픽 툴은?", "a": "Blender", "explain": "블렌더는 무료로 사용 가능한 3D 그래픽 툴이며 게임 엔진들도 블렌더 파일 사용을 지원합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-2. 가상현실 기반 시스템 설계", "num": 14, "q": "개발 워크플로 설계 시 가장 먼저 수행해야 하는 단계는?", "a": "콘텐츠 기획안 검토", "explain": "개발 워크플로는 콘텐츠 기획서의 내용과 개발 상황에 맞추어 설계되어야 하므로 기획서를 전반적으로 검토해야 합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-2. 가상현실 기반 시스템 설계", "num": 15, "q": "작업 우선순위를 결정하는 가장 중요한 기준은?", "a": "다른 작업을 위해 선행해야 할 작업 여부", "explain": "다른 작업을 위하여 선행해야 할 작업인지에 대한 주요 기준이 됩니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-2. 가상현실 기반 시스템 설계", "num": 16, "q": "체계화된 데이터의 집합체를 의미하며 정보 관리를 위한 대형 저장 공간 역할을 하는 것은?", "a": "데이터베이스", "explain": "데이터베이스는 체계화된 데이터의 집합체이며 정보 관리를 위한 대형 저장 공간입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-2. 가상현실 기반 시스템 설계", "num": 17, "q": "데이터베이스를 실행하거나 관리하기 위한 소프트웨어 시스템은?", "a": "DBMS", "explain": "데이터베이스를 실행하거나 관리하기 위한 소프트웨어 시스템을 DBMS라고 합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-2. 가상현실 기반 시스템 설계", "num": 18, "q": "열(Column)과 행(Row)으로 구성된 2차원 표 형태의 현재 주류 데이터베이스 방식은?", "a": "관계형 데이터베이스", "explain": "관계형 데이터베이스(RDB)는 열과 행으로 데이터를 목록화한 2차원 표 형태의 데이터베이스입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-2. 가상현실 기반 시스템 설계", "num": 19, "q": "관계형 데이터베이스에 데이터를 등록, 갱신, 제거하기 위해 사용하는 언어는?", "a": "SQL", "explain": "관계형 데이터베이스를 조작하기 위해서는 SQL(Structured Query Language)을 사용합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-2. 가상현실 기반 시스템 설계", "num": 20, "q": "관계형 데이터베이스의 일부 기능을 버리고 성능 효율을 높여 웹 서비스 분야에서 많이 쓰이는 방식은?", "a": "NoSQL", "explain": "NoSQL은 관계형 DB의 일부 기능을 버리고 성능을 높이는 데 주력하여 웹 서비스 분야에서 많이 사용됩니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-2. 가상현실 기반 시스템 설계", "num": 21, "q": "SQL 문에서 특정 정보를 검색할 때 사용하는 키워드는?", "a": "SELECT", "explain": "World 데이터베이스 등에서 데이터를 검색할 때는 select 명령어를 사용합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-2. 가상현실 기반 시스템 설계", "num": 22, "q": "여러 사용자가 동시에 동일 데이터에 접근하여 수정을 시도할 때 발생하는 문제를 방지하는 개념은?", "a": "동시성 제어", "explain": "다수의 사용자가 동시에 동일 데이터에 접근하여 수정을 시도할 때 발생하는 문제를 방지하는 것을 동시성 제어라고 합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-2. 가상현실 기반 시스템 설계", "num": 23, "q": "동시성 제어 방식 중 일반적으로 사용되는 방식이 아닌 것은?", "a": "모든 사람이 열 수 있고 최종 반영자의 내용이 반영됨", "explain": "일반적으로 1번과 2번의 방식이 사용되며, 모든 사람이 열고 최종 반영자의 내용이 반영되는 방식은 일반적이지 않습니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-2. 가상현실 기반 시스템 설계", "num": 24, "q": "DBMS의 기능 중 특정 조건을 통과하는 경우에만 데이터를 저장하여 데이터의 정확성을 유지하는 기능은?", "a": "무결성", "explain": "특정 조건을 통과하는 경우에 한해서만 데이터를 저장하도록 하여 데이터의 무결성을 유지합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-2. 가상현실 기반 시스템 설계", "num": 25, "q": "통신망으로 연결된 컴퓨터 전산망을 의미하며 정보를 주고받는 기반 시설은?", "a": "네트워크", "explain": "네트워크는 통신망으로 연결된 컴퓨터 전산망을 의미하며 정보를 주고받거나 DB에 접근하는 데 사용됩니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-2. 가상현실 기반 시스템 설계", "num": 26, "q": "웹 서비스에서 일반적인 방식으로 클라이언트 요청에 따라 서버가 응답하는 단순 구조의 네트워크 방식은?", "a": "비동기 방식", "explain": "비동기는 클라이언트 요청에 따라 서버가 응답하는 단순 구조로 웹 서비스에서 일반적으로 사용됩니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-2. 가상현실 기반 시스템 설계", "num": 27, "q": "다수의 사용자가 동시에 접속하는 VR 콘텐츠에서 클라이언트가 서버와 접속하여 연산을 서버에서 처리하는 방식은?", "a": "서버 동기화", "explain": "서버 동기화는 연산의 대다수를 서버에서 계산하고 모든 클라이언트가 동기화되는 방식입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-2. 가상현실 기반 시스템 설계", "num": 28, "q": "동기화를 서버가 하지 않고 클라이언트가 서버 역할을 하며 매우 정교한 동기화가 가능한 방식은?", "a": "데디케이티드 방식", "explain": "데디케이티드 방식은 클라이언트가 서버 역할을 하며 동기화하므로 매우 정교한 동기화가 가능합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-2. 가상현실 기반 시스템 설계", "num": 29, "q": "단 하나의 시스템이 모든 것을 처리하며 어떠한 네트워크도 연결되지 않는 가장 단순한 구조는?", "a": "스탠드 얼론", "explain": "스탠드 얼론 방식은 단 하나의 시스템이 모든 것을 처리하며 어떠한 네트워크도 연결되지 않습니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-2. 가상현실 기반 시스템 설계", "num": 30, "q": "웹 서버 계층, 애플리케이션 계층, 데이터베이스 계층으로 나뉘는 네트워크 아키텍처는?", "a": "Web 3계층 방식", "explain": "Web 3계층 방식은 웹 서버, 애플리케이션, 데이터베이스 계층으로 나뉘어 관리됩니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-3. 가상현실 기반 시스템 운영", "num": 1, "q": "프로젝트 구축 일정 수립의 정의로 가장 적합한 것은?", "a": "업무를 기간에 맞게 분배하는 과정", "explain": "프로젝트 구축 일정 수립은 목표 프로젝트를 개발하는 데 필요한 업무를 기간에 맞게 분배하는 과정을 말합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-3. 가상현실 기반 시스템 운영", "num": 2, "q": "가상현실 콘텐츠 개발 업데이트 계획 수립 시, 일반적으로 확보하도록 권장되는 콘텐츠 분량은?", "a": "6개월", "explain": "가상현실 콘텐츠의 내용과 관련하여 6개월 정도의 콘텐츠 분량을 확보하도록 권장합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-3. 가상현실 기반 시스템 운영", "num": 3, "q": "본격적인 개발 전 핵심 기능 위주로 제작하여 구현 가능성을 검증하는 단계는?", "a": "프로토타입", "explain": "프로토타입은 본격적인 개발 전 핵심 기능 위주로 제작하여 구현 가능성을 검증하는 단계입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-3. 가상현실 기반 시스템 운영", "num": 4, "q": "개발사 내부에서 문제점을 확인하고 실 서비스 환경 시스템을 추가하여 만든 버전은?", "a": "테스트 개발 버전", "explain": "테스트 개발 버전은 내부에서 문제점과 시장성을 확인하기 위해 실 서비스 환경 시스템을 추가한 버전입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-3. 가상현실 기반 시스템 운영", "num": 5, "q": "정식 서비스 전 제한된 인원을 모집하여 버그나 안정성을 확인하는 단계는?", "a": "임시 오픈 버전", "explain": "임시 오픈 버전은 정식 서비스 전 제한된 인원으로 버그나 안정성 확인을 하는 단계입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-3. 가상현실 기반 시스템 운영", "num": 6, "q": "구축 일정 수립 원칙 중 프로젝트를 관리가 가능한 여러 작업으로 분할하는 원칙은?", "a": "구획화", "explain": "구획화(compartmentalization)는 프로젝트를 관리가 가능한 여러 작업으로 분할·구획하는 원칙입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-3. 가상현실 기반 시스템 운영", "num": 7, "q": "분할된 작업들 사이의 관계를 결정하여 우선순위를 정할 수 있게 하는 원칙은?", "a": "상호 의존성", "explain": "상호 의존성(interdependency) 원칙을 통해 작업들 사이의 관계를 결정하고 우선순위를 정합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-3. 가상현실 기반 시스템 운영", "num": 8, "q": "인원에 비해 작업이 많거나 적지 않은지 확인하여 작업 시간을 적절히 분배하는 원칙은?", "a": "노력의 검증", "explain": "노력의 검증(effort validation)은 인원에 맞게 작업 시간이 적절히 분배되었는지 확인하는 원칙입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-3. 가상현실 기반 시스템 운영", "num": 9, "q": "구축 일정 수립 시 우선순위를 결정하는 가장 중요한 기준은?", "a": "선행 작업 여부", "explain": "구축 우선순위는 다른 작업에 앞서서 진행되어야 하는 선행 작업 여부와 기획상의 중요도를 기준으로 정합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-3. 가상현실 기반 시스템 운영", "num": 10, "q": "늦어진 프로젝트에 인력을 추가 투입하면 오히려 더 늦어질 수 있다는 법칙은?", "a": "브룩스의 법칙", "explain": "브룩스의 법칙(Brooks' Law)은 늦어진 프로젝트에 인력을 투입하면 교육과 소통 비용으로 인해 더 지체될 수 있음을 말합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-3. 가상현실 기반 시스템 운영", "num": 11, "q": "가상현실 기반 시스템 프로젝트 개발 조직도에서 시나리오, 시스템, 레벨을 담당하는 팀은?", "a": "기획 팀", "explain": "기획 팀은 시나리오, 시스템, 레벨 기획 등을 담당합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-3. 가상현실 기반 시스템 운영", "num": 12, "q": "그래픽 팀의 세부 구성 항목에 해당하지 않는 것은?", "a": "데이터베이스 설계", "explain": "그래픽 팀은 원화, 캐릭터, 배경, 애니메이션, 이펙트 등을 담당합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-3. 가상현실 기반 시스템 운영", "num": 13, "q": "작업 과정을 관리할 때 간트 차트와 함께 사용하여 주기적으로 진행 사항을 점검하는 것은?", "a": "마일스톤", "explain": "간트 차트를 통해 진행 사항을 파악하고 주기적인 마일스톤을 통해 작업 사항을 점검합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-3. 가상현실 기반 시스템 운영", "num": 14, "q": "온라인 화이트보드 형태로 포스트잇을 붙이듯 아이디어를 시각화하는 협업 도구는?", "a": "보드믹스", "explain": "보드믹스(Boardmix)는 온라인 화이트보드 형태로 아이디어를 시각화하고 협업하기 용이한 도구입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-3. 가상현실 기반 시스템 운영", "num": 15, "q": "1980년대 도요타에 의해 유명해진 모델을 최초로 적용한 프로젝트 관리 툴은?", "a": "트렐로", "explain": "트렐로는 칸반(Kanban) 모델을 최초로 적용한 프로젝트 관리 툴로 유명합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-3. 가상현실 기반 시스템 운영", "num": 16, "q": "아틀라시안사가 개발하여 특히 개발 조직에서 스크럼이나 스프린트 관리에 많이 쓰이는 툴은?", "a": "지라", "explain": "지라는 개발자들이 사용하는 개념과 환경을 고려하여 만들어진 개발 관리 최적화 툴입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-3. 가상현실 기반 시스템 운영", "num": 17, "q": "노트, 스케줄, 협업 등 1인 생산성 도구로 페이지 간 관계 중심 구성이 특징인 툴은?", "a": "노션", "explain": "노션은 페이지 간의 관계 중심으로 구성된 1인 생산성 관리 도구입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-3. 가상현실 기반 시스템 운영", "num": 18, "q": "페이스북 전직 경영진들이 만든 툴로 타임라인으로 프로젝트 전체를 시각화하는 툴은?", "a": "아사나", "explain": "아사나는 전직 페이스북 경영진들이 만든 툴로 타임라인과 칸반 보드 기능을 제공합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-3. 가상현실 기반 시스템 운영", "num": 19, "q": "가상현실 시스템의 문제점을 파악하고 해결안을 찾는 품질 보증 과정을 뜻하는 용어는?", "a": "QA", "explain": "품질 보증을 통해 문제점을 파악하고 해결하는 과정을 QA(Quality Assurance)라고 합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-3. 가상현실 기반 시스템 운영", "num": 20, "q": "테스트 명세서 검수 항목 중 요구 사항이 모두 기술되어 있는지 확인하는 항목은?", "a": "기능 완전성", "explain": "시스템 기능 완전성은 필요한 정보나 요구 사항 명세에 모두 기술되어 있는지 여부를 말합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-3. 가상현실 기반 시스템 운영", "num": 21, "q": "기록된 용어와 개념이 일관성 있게 사용되어 모순이 없는지 확인하는 검수 항목은?", "a": "일관성", "explain": "시스템 기능 일관성은 용어와 개념이 일관성 있게 사용되어 상호 모순이 없는지 확인하는 것입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-3. 가상현실 기반 시스템 운영", "num": 22, "q": "기능의 출처나 근거가 명확하게 기술되어 있는지 확인하는 검수 항목은?", "a": "기능 추적성", "explain": "시스템 기능 추적성은 기능의 출처나 근거가 명확하게 기술되어 있는지 확인하는 것입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-3. 가상현실 기반 시스템 운영", "num": 23, "q": "시스템 구축 일정 관리 시, 약속된 일정이 지켜지지 않을 경우 발생하는 가장 큰 문제는?", "a": "남은 모든 작업 계획의 차질", "explain": "일정이 지켜지지 않으면 그것을 기점으로 남아 있는 모든 작업 계획에 차질이 빚게 됩니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-3. 가상현실 기반 시스템 운영", "num": 24, "q": "테스트 운용 계획 수립 시 가장 먼저 해야 할 일은?", "a": "구축된 시스템 점검", "explain": "테스트 운용 계획을 수립할 때는 먼저 구축된 시스템을 점검해야 합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "01. 가상현실 시스템 설계", "sub": "1-3. 가상현실 기반 시스템 운영", "num": 25, "q": "테스트 명세서 검수 시 이해관계자가 기대하는 가치를 제공하는지 확인하는 항목은?", "a": "기능 명확성", "explain": "시스템 기능 명확성은 이해관계자가 기대하는 가치를 제공할 수 있도록 명확히 기술되어 있는지 확인하는 것입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-1. 알고리즘 프로그래밍", "num": 1, "q": "자료 구조의 필요성으로 옳지 않은 것은?", "a": "메모리 사용량 증가", "explain": "자료 구조는 메모리 절약, 실행 시간 단축, 구현 용이 등의 목적으로 필요합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-1. 알고리즘 프로그래밍", "num": 2, "q": "여러 개의 자료를 한 줄로 순서대로 저장하고 자료 간 일대일(1:1) 관계를 가지는 구조는?", "a": "선형 구조", "explain": "선형 구조는 자료를 한 줄로 순서대로 저장하며 일대일 관계를 가집니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-1. 알고리즘 프로그래밍", "num": 3, "q": "대표적인 선형 구조에 해당하지 않는 것은?", "a": "트리(tree)", "explain": "트리는 대표적인 비선형 구조에 해당합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-1. 알고리즘 프로그래밍", "num": 4, "q": "자료 간의 관계가 1:N 또는 N:M인 비선형 구조의 예로 옳은 것은?", "a": "그래프(graph)", "explain": "비선형 구조의 대표적인 예로는 트리와 그래프가 있습니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-1. 알고리즘 프로그래밍", "num": 5, "q": "프로그램 언어에서 제공하는 정수, 실수, 문자열 등의 기본적인 자료형을 무엇이라 하는가?", "a": "단순 구조", "explain": "정수(int), 실수(float), 문자열(string) 등은 단순 구조에 해당합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-1. 알고리즘 프로그래밍", "num": 6, "q": "하드디스크와 같은 보조기억 장치에 저장되는 대용량 자료 구조를 일컫는 말은?", "a": "파일 구조", "explain": "파일 구조는 컴퓨터의 하드디스크와 같은 보조기억 장치에 저장되는 자료 구조를 말합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-1. 알고리즘 프로그래밍", "num": 7, "q": "같은 종류의 자료를 연속적으로 저장하고 각 번호(index)를 붙여 관리하는 자료 구조는?", "a": "배열(array)", "explain": "배열은 같은 종류의 자료를 연속적으로 저장하고 인덱스 번호로 관리합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-1. 알고리즘 프로그래밍", "num": 8, "q": "여러 종류의 자료를 순서대로 저장하고 관리할 수 있는 자료 구조는?", "a": "튜플", "explain": "튜플은 여러 종류의 자료를 순서대로 저장하고 관리할 수 있는 자료 구조입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-1. 알고리즘 프로그래밍", "num": 9, "q": "데이터와 포인터를 가진 노드들이 한 줄로 연결되어 있는 방식의 자료 구조는?", "a": "연결 리스트", "explain": "각 노드가 데이터와 포인터를 가지고 한 줄로 연결되어 있는 방식은 단일 연결 리스트입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-1. 알고리즘 프로그래밍", "num": 10, "q": "연결 리스트의 마지막 노드와 처음 노드를 연결하여 원형으로 만든 자료 구조는?", "a": "원형 연결 리스트", "explain": "마지막 노드와 처음 노드를 연결하여 원형으로 만든 것은 원형 연결 리스트입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-1. 알고리즘 프로그래밍", "num": 11, "q": "부모 자식 관계를 바탕으로 계층적으로 자료를 저장하는 비선형 구조는?", "a": "트리", "explain": "트리는 계층 구조(hierarchical structure)로 부모 자식 관계를 바탕으로 자료를 저장합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-1. 알고리즘 프로그래밍", "num": 12, "q": "노드(node)와 간선(edge)으로 각 자료의 연결 관계를 표현한 자료 구조는?", "a": "그래프", "explain": "그래프는 노드와 간선으로 자료 간의 관계를 표현하는 구조입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-1. 알고리즘 프로그래밍", "num": 13, "q": "그래프에서 자료의 단위가 되는 노드를 일컫는 다른 용어는?", "a": "정점", "explain": "노드는 저장하려는 자료의 단위이며 정점(vertex)이라고도 합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-1. 알고리즘 프로그래밍", "num": 14, "q": "루트 노드가 언제나 그 트리의 최댓값 또는 최솟값을 가지는 자료 구조는?", "a": "히프", "explain": "루트 노드가 최댓값 또는 최솟값을 가지는 이진 트리 구조를 히프라고 합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-1. 알고리즘 프로그래밍", "num": 15, "q": "순서도 알고리즘 판별 단계에서 조건식이 거짓일 때 흐름이 이어지는 방향은?", "a": "no", "explain": "조건식을 판별하여 거짓이면 no 방향으로 흐름이 이어지며 반복문을 종료합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-1. 알고리즘 프로그래밍", "num": 16, "q": "트리 구조에서 오직 한 개만 연결이 가능한 노드는 무엇인가?", "a": "이전 노드(부모)", "explain": "트리에서 다음 노드(자식)는 여러 개를 연결할 수 있지만 이전 노드는 오직 한 개만 연결 가능합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-1. 알고리즘 프로그래밍", "num": 17, "q": "루트 노드가 트리의 최솟값을 가지는 히프의 명칭은?", "a": "최소 히프", "explain": "루트 노드가 최솟값을 가지는 히프를 최소 히프라고 합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-1. 알고리즘 프로그래밍", "num": 18, "q": "파일 구조 중 컴퓨터 메모리가 아닌 하드디스크에 저장되는 특징을 가진 것은?", "a": "보조기억 장치 저장 파일", "explain": "파일 구조는 컴퓨터의 하드디스크와 같은 보조기억 장치에 저장되는 구조입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-1. 알고리즘 프로그래밍", "num": 19, "q": "루트 노드가 최댓값을 가지는 히프의 명칭은?", "a": "최대 히프", "explain": "루트 노드가 트리의 최댓값을 가지는 히프를 최대 히프라고 합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-1. 알고리즘 프로그래밍", "num": 20, "q": "노드와 노드 사이를 연결하여 그래프를 구성하는 선은?", "a": "간선", "explain": "간선(edge)은 그래프에서 노드 사이를 연결하는 선을 의미합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-2. 컴퓨터 그래픽스 구현", "num": 1, "q": "2D 그래픽스 구현 방식 중 점, 선, 면으로 구성되어 해상도에 영향을 받지 않고 자유롭게 수정하는 방식은?", "a": "벡터", "explain": "벡터 형식의 이미지는 점, 선, 면으로 구성되어 수정이 용이하며 해상도에 독립적입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-2. 컴퓨터 그래픽스 구현", "num": 2, "q": "사진 저장에 주로 사용되며, 높은 압축률을 지원하지만 반복 저장 시 화질이 저하되는 손실 압축 형식은?", "a": "JPEG", "explain": "JPEG은 주로 사진 저장용으로 쓰이며 화질 저하가 발생하는 손실 압축 방식입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-2. 컴퓨터 그래픽스 구현", "num": 3, "q": "256색으로 색상이 제한되어 있지만, 그 이하의 색을 가진 이미지의 경우 손실 없이 저장 가능한 형식은?", "a": "GIF", "explain": "GIF는 저장 가능 컬러가 256색으로 제한되어 있습니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-2. 컴퓨터 그래픽스 구현", "num": 4, "q": "투명 배경을 지원하여 웹용 아이콘이나 UI, 품질이 중요한 사진 저장에 널리 쓰이는 비손실 압축 형식은?", "a": "PNG", "explain": "PNG는 24비트 컬러와 투명 바탕을 지원하며 비손실 압축을 수행합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-2. 컴퓨터 그래픽스 구현", "num": 5, "q": "마이크로소프트가 개발한 파일 형식으로, 무손실 압축 형식이라 용량이 크다는 특징을 가진 비트맵 이미지 파일은?", "a": "BMP", "explain": "BMP는 마이크로소프트사가 개발한 비압축 비트맵 이미지 저장용 파일 형식입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-2. 컴퓨터 그래픽스 구현", "num": 6, "q": "RLE 압축 방식을 사용하여 비손실 압축이 가능하며, 단순한 알고리즘 덕분에 널리 사용되는 이미지 형식은?", "a": "TGA", "explain": "TGA는 RLE 압축 방식을 사용하여 비손실 압축이 가능한 형식입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-2. 컴퓨터 그래픽스 구현", "num": 7, "q": "한 대의 스피커로 모든 음향을 재생하는 구조로, 음의 분리가 되지 않고 입체감이 떨어지는 음향 방식은?", "a": "모노", "explain": "모노(Mono)는 한 대의 스피커로 모든 음향을 재생하는 기본 구조입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-2. 컴퓨터 그래픽스 구현", "num": 8, "q": "아날로그 소리를 디지털로 변환할 때 1초당 소리를 기록하는 횟수를 의미하며 소리의 정확도를 나타내는 용어는?", "a": "샘플 레이트", "explain": "샘플 레이트(Sample Rate)는 1초당 기록된 소리의 횟수를 의미합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-2. 컴퓨터 그래픽스 구현", "num": 9, "q": "보통 CD 음질의 규격으로 따르며, 가상현실 콘텐츠 작업 시 호환성을 위해 주로 따르는 샘플 레이트 값은?", "a": "44.1kHz", "explain": "보통 CD 음질의 규격은 44.1kHz이며 대부분의 작업이 이 규격을 따릅니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-2. 컴퓨터 그래픽스 구현", "num": 10, "q": "초당 처리되는 데이터의 양(비트 수)을 의미하며, MP3 표준 품질의 경우 보통 128~160kbps를 사용하는 개념은?", "a": "비트 레이트", "explain": "비트 레이트(Bit Rate)는 초당 처리되는 데이터의 양을 말합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-2. 컴퓨터 그래픽스 구현", "num": 11, "q": "전자 음악 장치들 간의 신호 체계 표준으로, 악기 간 통신 및 음악 파일의 손쉬운 수정을 가능하게 하는 것은?", "a": "MIDI", "explain": "미디(MIDI)는 전자 음악 장치들을 연결하여 신호를 주고받는 신호 체계 표준입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-2. 컴퓨터 그래픽스 구현", "num": 12, "q": "PCM 방식을 사용하는 윈도우 운영체제의 표준 오디오 형식으로, 무손실 무압축 방식인 것은?", "a": "WAV", "explain": "WAV는 윈도우즈 운영 체제에서 표준적으로 사용되는 무손실 무압축 형식입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-2. 컴퓨터 그래픽스 구현", "num": 13, "q": "MP3 형식의 유료화에 대체하기 위해 만든 손실 압축 형식의 오픈 소스 오디오 형식은?", "a": "OGG", "explain": "OGG는 MP3의 유료화에 대체하기 위해 만든 오픈 소스 오디오 형식입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-2. 컴퓨터 그래픽스 구현", "num": 14, "q": "압축 과정에서 오디오 스트림에 손실이 발생하지 않는 대표적인 비손실 압축 형식은?", "a": "FLAC", "explain": "FLAC은 압축 과정에서 손실이 발생하지 않는 무손실 압축 형식입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-2. 컴퓨터 그래픽스 구현", "num": 15, "q": "OpenCV 라이브러리를 C# 환경에서 활용하기 위해 선언해야 하는 네임스페이스(namespace)는?", "a": "using OpenCvSharp", "explain": "C# 환경에서 OpenCV 사용 시 OpenCvSharp 네임스페이스를 선언합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-2. 컴퓨터 그래픽스 구현", "num": 16, "q": "카메라 영상을 획득하기 위해 사용하는 클래스와 영상 출력을 위해 사용하는 OpenCvSharp 클래스가 바르게 짝지어진 것은?", "a": "CvCapture, IplImage", "explain": "영상 획득을 위해 CvCapture, 영상 출력을 위해 IplImage를 선언합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-2. 컴퓨터 그래픽스 구현", "num": 17, "q": "OpenCV에서 카메라의 프레임 너비(FrameWidth)나 높이(FrameHeight)를 설정할 때 사용하는 메서드는?", "a": "SetCaptureProperty", "explain": "SetCaptureProperty를 통해 카메라 프레임의 너비와 높이를 설정할 수 있습니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-2. 컴퓨터 그래픽스 구현", "num": 18, "q": "OpenCvSharp에서 이미지를 불러올 때 원본과 동일한 색상 모드(AnyColor)로 불러오기 위해 사용하는 클래스는?", "a": "IplImage", "explain": "IplImage 클래스를 AnyColor 모드로 사용하여 원본 이미지를 불러옵니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-2. 컴퓨터 그래픽스 구현", "num": 19, "q": "영상이나 이미지에서 원(Circle) 모양의 객체를 검출하기 위해 사용하는 특수한 변환 알고리즘은?", "a": "Hough Circles", "explain": "HoughCircles 메서드는 허프 변환을 이용하여 원을 검출합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-2. 컴퓨터 그래픽스 구현", "num": 20, "q": "원 검출의 정확도를 높이기 위해 그레이스케일 이미지에 적용하는 Gaussian 필터링 종류는?", "a": "Smooth", "explain": "정확도를 높이기 위해 SmoothType.Gaussian을 적용하여 노이즈를 제거합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-2. 컴퓨터 그래픽스 구현", "num": 21, "q": "검출된 여러 개의 원 정보를 담은 'circles' 시퀀스를 순회하며 개별 원을 그리기 위해 사용하는 C# 반복문은?", "a": "foreach", "explain": "foreach 구문을 사용하여 검출된 원 리스트를 순회하며 개별 원을 처리합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-2. 컴퓨터 그래픽스 구현", "num": 22, "q": "블렌핀 디자인 시 이미지 외곽선에 정교하게 맞추어 선을 생성하기 위해 사용하는 제어 도구는?", "a": "곡선-제어점", "explain": "곡선-제어점 도구를 사용하여 이미지 외곽을 따라 정교한 선을 생성합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-2. 컴퓨터 그래픽스 구현", "num": 23, "q": "그려진 단면 선형을 수직 축을 기준으로 360도 회전시켜 볼링핀과 같은 입체 객체를 만드는 3D 모델링 기능은?", "a": "축회전", "explain": "축회전 기능을 통해 평면 단면을 입체 솔리드로 변환합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-2. 컴퓨터 그래픽스 구현", "num": 24, "q": "낮은 비트 레이트에서 음질이 최적화되어 있으며 네트워크 전송을 고려해 설계된 마이크로소프트의 오디오 형식은?", "a": "WMA", "explain": "WMA는 낮은 비트 레이트에서 음질이 최적화된 마이크로소프트의 손실 압축 형식입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-2. 컴퓨터 그래픽스 구현", "num": 25, "q": "악보 기록 및 재생, 오디오 편집을 가능케 하는 소프트웨어를 이용하여 오디오 작업을 수행하는 것은?", "a": "시퀀싱", "explain": "시퀀서를 이용하여 오디오 작업을 하는 것을 시퀀싱이라고 합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-3. 인공지능 설계 및 구현", "num": 1, "q": "인공지능 연구가 본격적으로 시작된 시기로 가장 적절한 것은?", "a": "1950년대", "explain": "인공지능에 대한 연구는 1950년대부터 본격적으로 시작되었습니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-3. 인공지능 설계 및 구현", "num": 2, "q": "2010년대 들어 인공지능 기술이 비약적으로 발전하게 된 배경이 아닌 것은?", "a": "진공관 컴퓨팅 기술의 도입", "explain": "2010년대 발전은 컴퓨팅 자원 가격 하락, GPU, 클라우드 컴퓨팅 등의 기술 발전 덕분입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-3. 인공지능 설계 및 구현", "num": 3, "q": "디지털 이미지나 영상 등으로부터 시각적인 정보를 입력받아 분석하는 인공지능 분야는?", "a": "컴퓨터 비전", "explain": "컴퓨터 비전은 시각 정보를 입력받아 얼굴이나 사물 인식 등을 수행하는 분야입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-3. 인공지능 설계 및 구현", "num": 4, "q": "컴퓨터가 사람이 사용하는 일상 언어로 의사소통을 할 수 있게 하는 연구 분야는?", "a": "자연어 처리", "explain": "자연어 처리는 인간의 자연어로 컴퓨터와 의사소통을 가능하게 하는 분야입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-3. 인공지능 설계 및 구현", "num": 5, "q": "학습된 지식을 기반으로 새로운 정보에 대한 답을 스스로 도출해 내는 추론 능력 분야는?", "a": "상식 추론", "explain": "상식 추론은 기존 데이터 분석 결과를 이용해 새로운 데이터에 대한 예측을 하는 분야입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-3. 인공지능 설계 및 구현", "num": 6, "q": "데이터로부터 패턴을 학습하여 새로운 데이터에 대해 적절한 작업을 수행하는 일련의 처리 방법은?", "a": "머신 러닝", "explain": "머신 러닝은 주어진 데이터에서 패턴을 학습하여 새로운 데이터를 처리하는 방법입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-3. 인공지능 설계 및 구현", "num": 7, "q": "인공지능(AI), 머신러닝(ML), 딥러닝(DL)의 포함 관계를 바르게 설명한 것은?", "a": "DL ⊂ ML ⊂ AI", "explain": "인공지능의 큰 개념 속에 머신 러닝이 있고, 머신 러닝의 한 부분이 딥러닝입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-3. 인공지능 설계 및 구현", "num": 8, "q": "테이블과 같은 형태로 정리되어 있는 데이터를 무엇이라 하는가?", "a": "정형 데이터", "explain": "정형 데이터는 테이블과 같은 일정한 형태로 정리된 데이터를 의미합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-3. 인공지능 설계 및 구현", "num": 9, "q": "이미지, 음성, 자연어와 같이 정리되지 않은 형태의 데이터를 지칭하는 용어는?", "a": "비정형 데이터", "explain": "이미지, 음성 등 정리되지 않은 형태의 데이터는 비정형 데이터입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-3. 인공지능 설계 및 구현", "num": 10, "q": "데이터 전처리 과정에 포함되지 않는 작업은?", "a": "하드웨어 조립", "explain": "전 처리에는 데이터 누락 값, 이상치 처리, 정규화 등이 포함됩니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-3. 인공지능 설계 및 구현", "num": 11, "q": "딥러닝 분석 단계 중 성능 측정을 위해 검증 데이터를 사용하여 정확도를 계산하는 단계는?", "a": "모델 평가", "explain": "모델 평가는 학습된 모델을 평가하여 정확도, 정밀도 등의 성능을 측정하는 단계입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-3. 인공지능 설계 및 구현", "num": 12, "q": "객체가 가질 수 있는 유한한 상태를 정의하고 입력에 따라 상태를 전환하는 모델은?", "a": "유한 상태 기계", "explain": "유한 상태 기계(FSM)는 객체의 상태 모음과 전이 규칙을 정의한 모델입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-3. 인공지능 설계 및 구현", "num": 13, "q": "유한 상태 기계(FSM)의 설계 특징으로 옳은 것은?", "a": "동시에 하나의 상태만 가질 수 있다", "explain": "유한 상태 기계 설계에서 객체는 일반적으로 동시에 하나의 상태만 가질 수 있습니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-3. 인공지능 설계 및 구현", "num": 14, "q": "유한 상태 기계의 기본 요소 중 '사용자가 시야에 들어오면'과 같이 전이에 필요한 조건은?", "a": "규칙(Rules)", "explain": "규칙(Rules)은 한 상태에서 다른 상태로 전이하는 데 필요한 조건을 정의합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-3. 인공지능 설계 및 구현", "num": 15, "q": "유한 상태 기계의 구성 요소 중 서로 다른 상태 간의 관계를 정의하는 것은?", "a": "전이", "explain": "전이(Transition)는 서로 다른 상태 간의 연결 관계를 정의합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-3. 인공지능 설계 및 구현", "num": 16, "q": "구글의 티처블 머신(Teachable Machine)에서 생성할 수 없는 프로젝트 유형은?", "a": "냄새 프로젝트", "explain": "티처블 머신은 이미지, 오디오, 포즈 프로젝트 생성을 지원합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-3. 인공지능 설계 및 구현", "num": 17, "q": "티처블 머신 이미지 프로젝트에서 5Mb 이하의 일반적인 이미지 사용에 적합한 모델은?", "a": "표준 이미지 모델", "explain": "5Mb 이하의 이미지 데이터를 다루기 위해서는 표준 이미지 모델을 선택합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-3. 인공지능 설계 및 구현", "num": 18, "q": "티처블 머신 모델 학습 시 전체 데이터를 한 번 학습하는 횟수를 의미하는 용어는?", "a": "에포크(Epoch)", "explain": "에포크는 전체 학습 데이터셋을 몇 번 반복해서 학습할지 결정하는 수치입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-3. 인공지능 설계 및 구현", "num": 19, "q": "티처블 머신에서 학습시킨 모델을 활용할 수 있는 플랫폼이나 환경이 아닌 것은?", "a": "한글 2024", "explain": "만든 알고리즘은 Tensorflow, node.js, 아두이노 등 다양한 개발 환경에서 활용 가능합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-3. 인공지능 설계 및 구현", "num": 20, "q": "웹 기반 인공지능 프로그래밍을 위해 p5.js와 함께 사용하는 대표적인 라이브러리는?", "a": "ml5.js", "explain": "웹 기반 인공지능 구현을 위해 ml5.js 라이브러리를 주로 활용합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-3. 인공지능 설계 및 구현", "num": 21, "q": "ml5.js에서 학습된 모델 파일을 사전에 로드하기 위해 사용하는 함수는?", "a": "preload()", "explain": "preload() 함수 내에서 이미지 분류 모델 등을 사전에 로드합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-3. 인공지능 설계 및 구현", "num": 22, "q": "ml5.js에서 비디오 화면의 좌우를 반전시켜 거울 모드로 만들기 위해 사용하는 함수는?", "a": "ml5.flipImage()", "explain": "ml5.flipImage() 함수를 통해 입력 영상을 좌우 반전시킬 수 있습니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-3. 인공지능 설계 및 구현", "num": 23, "q": "p5.js 코드 실행 시 캔버스 크기를 설정하고 비디오 캡처 등 초기 환경을 구축하는 함수는?", "a": "setup()", "explain": "setup() 함수는 프로그램 시작 시 한 번 실행되어 초기 설정을 담당합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-3. 인공지능 설계 및 구현", "num": 24, "q": "인공지능 모델의 예측 결과(라벨, 정확도 등)를 처리하는 콜백 함수명으로 적절한 것은?", "a": "gotResult", "explain": "gotResult 함수는 모델 분류가 완료된 후 결과나 오류를 받아 처리합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-3. 인공지능 설계 및 구현", "num": 25, "q": "ml5.js의 이미지 분류 결과 데이터(results)는 어떤 순서로 정렬되어 있는가?", "a": "신뢰도(확률) 높은 순서", "explain": "분류 결과는 신뢰도(confidence)가 높은 순서대로 배열에 저장됩니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-3. 인공지능 설계 및 구현", "num": 26, "q": "인공지능 기능 분석 단계 중 해결하고자 하는 목적, 범위, 제약 사항을 정하는 단계는?", "a": "문제 정의", "explain": "문제 정의 단계에서 해결하고자 하는 문제의 목적과 범위 등을 명확히 합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-3. 인공지능 설계 및 구현", "num": 27, "q": "요구 사항 분석 중 '개인 정보를 안전하게 보호할 수 있는가'와 관련된 검토 항목은?", "a": "사용자의 보안", "explain": "개인 정보 보호는 사용자의 요구 사항 분석 중 '사용자의 보안' 항목에 해당합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-3. 인공지능 설계 및 구현", "num": 28, "q": "티처블 머신에서 인공지능의 출력 정확도를 높이기 위한 가장 효율적인 방법은?", "a": "학습 데이터를 충분히 확보", "explain": "충분한 양의 학습 데이터를 확보하여 학습시키는 것이 정확도 향상에 가장 효율적입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-3. 인공지능 설계 및 구현", "num": 29, "q": "인공지능 모델 학습 시 한 번의 가중치 업데이트를 위해 묶어서 사용하는 데이터 크기는?", "a": "배치 크기", "explain": "배치 크기는 한 번의 학습 단계에서 사용되는 데이터 집합의 크기입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "02. 가상현실 응용프로그래밍", "sub": "2-3. 인공지능 설계 및 구현", "num": 30, "q": "ml5.js의 classifier.classify() 함수 호출 시 첫 번째 인자로 전달되는 데이터는?", "a": "분류 대상 이미지/비디오", "explain": "classify() 함수의 첫 번째 인자로는 분류하고자 하는 이미지나 비디오 데이터를 전달합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-1. 가상현실 콘텐츠 배포 환경 구성 (일부 문항 누락)", "num": 6, "q": "SQL 명령어 중 데이터 조작 언어(DML)에 해당하는 것으로만 짝지어진 것은?", "a": "Select, Insert, Delete, Update", "explain": "DML에는 데이터를 조회하거나 변경하는 Select, Insert, Delete, Update가 포함됩니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-1. 가상현실 콘텐츠 배포 환경 구성 (일부 문항 누락)", "num": 7, "q": "데이터베이스 관리 시스템(DBMS)의 필수 3대 기능이 아닌 것은?", "a": "보안(Security) 기능", "explain": "DBMS의 필수 3대 기능은 정의, 조작, 제어 기능입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-1. 가상현실 콘텐츠 배포 환경 구성 (일부 문항 누락)", "num": 8, "q": "데이터베이스의 장점 중 하나로, 데이터가 변경되어도 응용 프로그램에 영향을 받지 않는 성질은?", "a": "데이터의 독립성", "explain": "데이터의 독립성은 데이터의 구조가 바뀌어도 프로그램에 영향을 주지 않는 특징입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-1. 가상현실 콘텐츠 배포 환경 구성 (일부 문항 누락)", "num": 9, "q": "가상현실 마스터 콘텐츠 파일을 생성할 때, 윈도우 환경에서 범용적으로 사용되며 무압축 시 대용량이 되는 포맷은?", "a": "AVI", "explain": "윈도우(IBM PC) 환경에서 범용 마스터 파일은 무압축 AVI 형태가 주로 쓰입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-1. 가상현실 콘텐츠 배포 환경 구성 (일부 문항 누락)", "num": 10, "q": "Apple ProRes 포맷 중 알파 채널을 포함하여 모션 그래픽과 합성에 사용되는 고퀄리티 옵션은?", "a": "ProRes 4444", "explain": "Apple ProRes 4444는 알파 채널을 지원하며 고퀄리티 작업에 사용됩니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-1. 가상현실 콘텐츠 배포 환경 구성 (일부 문항 누락)", "num": 11, "q": "가상현실 콘텐츠 파일 네이밍 규칙 중 오류 방지를 위해 권장되는 사항은?", "a": "공백 대신 언더바를 사용한다.", "explain": "공백은 서버 처리 시 오류 가능성이 있어 언더바(_) 사용이 권장됩니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-1. 가상현실 콘텐츠 배포 환경 구성 (일부 문항 누락)", "num": 12, "q": "유튜브(YouTube) 플랫폼에 가상현실 콘텐츠를 업로드할 때 지원되는 최대 해상도 조건은?", "a": "8192x4096", "explain": "유튜브는 현재 최대 8,192x4,096 해상도까지 업로드를 지원합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-1. 가상현실 콘텐츠 배포 환경 구성 (일부 문항 누락)", "num": 13, "q": "페이스북(Facebook)에 업로드 가능한 가상현실 콘텐츠의 최대 시간과 용량 제한은?", "a": "30분, 5GB", "explain": "페이스북 가상현실 영상은 최대 30분, 용량 5GB까지 업로드가 가능합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-1. 가상현실 콘텐츠 배포 환경 구성 (일부 문항 누락)", "num": 14, "q": "인스타그램(Instagram)에 영상 업로드 시 권장되는 길이와 지원 비디오 형식은?", "a": "3초~60초, MP4", "explain": "인스타그램 영상은 3~60초 길이가 적절하며 MP4 형식이 널리 쓰입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-1. 가상현실 콘텐츠 배포 환경 구성 (일부 문항 누락)", "num": 15, "q": "소규모 비즈니스 모델을 위한 서버로, 저전력 CPU를 사용하여 유지비를 절감하는 서버는?", "a": "SOHO 서버", "explain": "SOHO 서버는 소규모 사업장에 적합한 저전력·저비용 서버 구성입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-1. 가상현실 콘텐츠 배포 환경 구성 (일부 문항 누락)", "num": 16, "q": "24시간 시스템 운영의 안정성을 위해 워크스테이션급 서버에서 주로 사용하는 RAM 종류는?", "a": "ECC Registered(RDIMM)", "explain": "서버의 안정성을 위해 오류 수정 기능이 있는 ECC Registered 램을 사용합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-1. 가상현실 콘텐츠 배포 환경 구성 (일부 문항 누락)", "num": 17, "q": "H.264 대비 압축 효율이 대폭 향상되었으며, 8K 128fps까지 표준화된 차세대 코덱은?", "a": "HEVC(H.265)", "explain": "HEVC(H.265)는 H.264보다 압축 효율이 월등히 높은 고성능 코덱입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-1. 가상현실 콘텐츠 배포 환경 구성 (일부 문항 누락)", "num": 18, "q": "스토리지의 구분 중 하드디스크나 SSD와 같은 외부 저장 장치를 의미하는 것은?", "a": "2차 스토리지", "explain": "HDD나 SSD 등 외부 보조 기억 장치는 2차 스토리지로 분류됩니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-1. 가상현실 콘텐츠 배포 환경 구성 (일부 문항 누락)", "num": 19, "q": "서버에 직접 전용 케이블로 연결하여 속도가 빠르지만, 파일 공유가 어려운 스토리지 방식은?", "a": "D.A.S", "explain": "DAS(Direct Attached Storage)는 서버에 직접 연결하는 단순하고 빠른 방식입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-1. 가상현실 콘텐츠 배포 환경 구성 (일부 문항 누락)", "num": 20, "q": "LAN을 통해 연결되어 네트워크 통신으로 데이터를 주고받으며, 관리가 용이한 방식은?", "a": "N.A.S", "explain": "NAS(Network Attached Storage)는 네트워크를 통해 여러 기기가 공유할 수 있는 방식입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-1. 가상현실 콘텐츠 배포 환경 구성 (일부 문항 누락)", "num": 21, "q": "광케이블과 전용 스위치를 사용하여 매우 빠른 속도와 용량 확장이 용이한 고가의 네트워크 방식은?", "a": "S.A.N", "explain": "SAN(Storage Area Network)은 고성능·대규모 환경을 위한 저장 장치 전용 네트워크입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-1. 가상현실 콘텐츠 배포 환경 구성 (일부 문항 누락)", "num": 22, "q": "데이터를 여러 디스크에 나누어 저장하여 속도는 빠르지만, 안정성이 떨어지는 RAID 방식은?", "a": "RAID 0", "explain": "RAID 0은 스트라이핑 방식으로 성능은 좋으나 하나만 고장 나도 데이터가 유실됩니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-1. 가상현실 콘텐츠 배포 환경 구성 (일부 문항 누락)", "num": 23, "q": "두 개의 디스크에 같은 데이터를 중복 기록(미러링)하여 안정성을 극대화한 RAID 방식은?", "a": "RAID 1", "explain": "RAID 1은 미러링을 통해 데이터의 손실 가능성을 최소화합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-1. 가상현실 콘텐츠 배포 환경 구성 (일부 문항 누락)", "num": 24, "q": "패리티(Parity) 정보를 각 디스크에 분산 저장하며, 최소 3개 이상의 디스크가 필요한 방식은?", "a": "RAID 5", "explain": "RAID 5는 분산 패리티를 사용하여 성능과 안정성의 균형을 맞춘 방식입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-1. 가상현실 콘텐츠 배포 환경 구성 (일부 문항 누락)", "num": 25, "q": "RAID 5와 원리는 같으나 패리티 2개를 사용하여 안정성을 더욱 높인 방식은?", "a": "RAID 6", "explain": "RAID 6은 두 개의 디스크 장애에 발생해도 데이터를 복구할 수 있는 방식입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-1. 가상현실 콘텐츠 배포 환경 구성 (일부 문항 누락)", "num": 26, "q": "디스크 용량이 N개일 때, RAID 5에서 실제로 사용 가능한 저장 공간은?", "a": "N-1", "explain": "RAID 5는 패리티용 디스크 1개 분량을 제외한 N-1 만큼 사용 가능합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-1. 가상현실 콘텐츠 배포 환경 구성 (일부 문항 누락)", "num": 27, "q": "디스크 N개 사용 시, RAID 6에서 실제로 사용 가능한 저장 공간은?", "a": "N-2", "explain": "RAID 6은 패리티용 디스크 2개 분량을 제외한 N-2 만큼 사용 가능합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-1. 가상현실 콘텐츠 배포 환경 구성 (일부 문항 누락)", "num": 28, "q": "마이크로소프트 오피스 중 폼, 보고서 기능 및 액셀과 높은 호환성을 제공하는 DB 프로그램은?", "a": "Access", "explain": "MS Access는 개인이나 소규모 팀에서 쓰기 좋은 편리한 DB 애플리케이션입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-1. 가상현실 콘텐츠 배포 환경 구성 (일부 문항 누락)", "num": 29, "q": "전 세계 점유율 1위 DBMS로 고성능 트랜잭션 처리에 강점을 가진 프로그램은?", "a": "Oracle", "explain": "Oracle은 대규모 시스템에서 가장 널리 쓰이는 강력한 성능의 DBMS입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-1. 가상현실 콘텐츠 배포 환경 구성 (일부 문항 누락)", "num": 30, "q": "아카이브 시스템 설계 시, 데이터를 다른 시스템으로 옮기는 작업을 무엇이라 하는가?", "a": "이전(Migration)", "explain": "Migration(이전)은 시스템 교체나 데이터 재배치를 위해 데이터를 이동하는 절차입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-2. 저작권 관리 방법의 적용", "num": 1, "q": "인간의 사상 또는 감정을 표현한 창작물을 저작권법에서 무엇이라 정의하는가?", "a": "저작물", "explain": "저작권법 제2조에 따르면 저작물은 인간의 사상 또는 감정을 표현한 창작물을 의미합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-2. 저작권 관리 방법의 적용", "num": 2, "q": "저작 재산권 중 저작물을 인쇄, 복사, 녹음, 녹화 등의 방법으로 유형물에 고정하거나 다시 제작할 수 있는 권리는?", "a": "복제권", "explain": "복제권은 저작물을 일시적 또는 영구적으로 유형물에 고정하거나 다시 제작할 수 있는 권리입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-2. 저작권 관리 방법의 적용", "num": 3, "q": "저작 인격권 중 저작물의 내용, 형식 및 제호 등이 저작자의 의사와 달리 변경되지 않도록 할 수 있는 권리는?", "a": "동일성 유지권", "explain": "동일성 유지권은 저작물의 내용·형식 및 제호 등이 저작자의 의사와 달리 변경되지 않도록 금지할 수 있는 권리입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-2. 저작권 관리 방법의 적용", "num": 4, "q": "저작권법상 '영상 저작물'에 대한 정의로 옳지 않은 것은?", "a": "반드시 실사 촬영물이어야 하며 애니메이션은 제외된다.", "explain": "영상 저작물에는 애니메이션(만화 영화)도 포함됩니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-2. 저작권 관리 방법의 적용", "num": 5, "q": "법인 등의 기획 하에 업무상 작성하는 저작물로서 계약에 정함이 없을 때 법인이 저작자가 되는 경우는?", "a": "업무상 저작물", "explain": "법인 등이 기획하여 업무상 작성하는 저작물은 업무상 저작물로 분류되어 법인이 저작자가 됩니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-2. 저작권 관리 방법의 적용", "num": 6, "q": "저작물을 직접 창작하지는 않았으나 실연자, 음반 제작자, 방송 사업자 등에게 부여되는 권리는?", "a": "저작 인접권", "explain": "저작물의 해석자나 전달자로서 가치를 증진하는 이들을 저작 인접권자로 보호합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-2. 저작권 관리 방법의 적용", "num": 7, "q": "저작 인격권의 특징 중 옳은 것은?", "a": "권리자 일신에 전속하는 권리이다.", "explain": "저작 인격권은 저작자 일신에 전속하는 권리로 양도의 대상이 되지 않습니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-2. 저작권 관리 방법의 적용", "num": 8, "q": "저작권 침해 예방을 위해 기업이 수립하는 내부 지침 및 업무 지침을 무엇이라 하는가?", "a": "저작권 자율 준수 프로그램(CCP)", "explain": "저작권 자율 준수 프로그램은 업무와 관련하여 저작권을 침해하지 않도록 하는 일정한 지침입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-2. 저작권 관리 방법의 적용", "num": 9, "q": "저작권 등록의 효과 중, 등록된 저작권을 침해한 자에게 '과실'이 있는 것으로 간주하는 효과는?", "a": "추정력", "explain": "저작권 등록 시 침해 행위에 과실이 있는 것으로 추정을 받게 됩니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-2. 저작권 관리 방법의 적용", "num": 10, "q": "저작권 등록이 되어 있을 때, 제3자에게 권리 변동 사실을 주장할 수 있는 힘은?", "a": "대항력", "explain": "권리 변동 사실 등을 등록하면 제3자에게도 그 변동 행위가 있었음을 주장할 수 있는 대항력이 발생합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-2. 저작권 관리 방법의 적용", "num": 11, "q": "미리 저작물을 등록한 경우, 실손해액 입증 없이도 법률이 정한 일정한 금액을 배상받을 수 있는 제도는?", "a": "법정 손해 배상 제도", "explain": "침해 전 등록한 경우 실손해 입증 없이 일정 금액을 청구하는 법정 손해 배상 제도를 이용할 수 있습니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-2. 저작권 관리 방법의 적용", "num": 12, "q": "저작권 등록 시 무명 또는 이명 저작물의 보호 기간에 대한 설명으로 옳은 것은?", "a": "실명 등록 시 저작자 사후 70년으로 연장", "explain": "무명/이명 저작물에 대해 실명을 등록하면 보호 기간이 공표 후 70년에서 사후 70년으로 연장됩니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-2. 저작권 관리 방법의 적용", "num": 13, "q": "우리나라에서 모든 종류의 저작물에 대한 저작권 등록 업무를 총괄하는 국내 유일 기관은?", "a": "한국저작권위원회", "explain": "한국저작권위원회는 국내에서 저작권 등록 업무를 총괄적으로 수행하는 유일한 기관입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-2. 저작권 관리 방법의 적용", "num": 14, "q": "베른협약(Berne Convention)에서 저작 재산권 침해 문제의 준거법으로 규정하고 있는 것은?", "a": "저작권 침해가 발생한 국가의 법률", "explain": "베른협약에 따르면 저작 재산권 침해 문제는 침해가 발생한 국가의 법률에 의하여 규율됩니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-2. 저작권 관리 방법의 적용", "num": 15, "q": "저작권법에서 규정하는 형사적 구제의 특징 중 옳은 것은?", "a": "저작권 범죄는 원칙적으로 친고죄에 해당한다.", "explain": "저작권법은 저작권 범죄를 친고죄로 규정하고 있어 저작권자의 고소가 반드시 필요합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-2. 저작권 관리 방법의 적용", "num": 16, "q": "저작권 형사 고소를 하기 위해 지켜야 할 고소 시효는 침해 행위 발생일로부터 몇 년인가?", "a": "3년", "explain": "저작권 침해 행위가 발생한 날로부터 3년 이내에 고소해야 고소의 효력이 유지됩니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-2. 저작권 관리 방법의 적용", "num": 17, "q": "저작권 권리 관리 정보 메타데이터의 주요 역할이 아닌 것은?", "a": "저작물 내용 자체의 고해상도 인코딩 보장", "explain": "메타데이터는 권리 관리 기반을 위한 정보이며, 인코딩 기술 자체를 보장하는 것은 아닙니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-2. 저작권 관리 방법의 적용", "num": 18, "q": "저작권의 특징 중 '인간의 사상 또는 감정'이 '표현'되어야 한다는 것은 어떤 원칙과 관련이 있는가?", "a": "아이디어-표현 이분법", "explain": "저작권은 사상(아이디어) 자체는 보호하지 않고 그것이 외부로 드러난 '표현'만을 보호합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-2. 저작권 관리 방법의 적용", "num": 19, "q": "게임 저작물의 저작권 보호 범위에 대한 설명으로 옳은 것은?", "a": "온라인/게임팩 영상 저작물 또는 컴퓨터 프로그램 저작물로 보호될 수 있다.", "explain": "디지털 기기에서 실행되는 게임은 영상 저작물 또는 컴퓨터 프로그램 저작물에 해당할 수 있습니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-2. 저작권 관리 방법의 적용", "num": 20, "q": "공동 저작물의 권리 행사에 관한 설명 중 옳은 것은?", "a": "저작자 전원의 합의에 의하지 아니하고는 행사할 수 없다.", "explain": "공동 저작물은 전원의 합의에 의해서만 권리를 행사할 수 있습니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-2. 저작권 관리 방법의 적용", "num": 21, "q": "음반 제작자가 가지는 권리는 저작권 중 어디에 해당하는가?", "a": "저작 인접권", "explain": "음반 제작자, 실연자 등은 저작 인접권자로 보호받습니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-2. 저작권 관리 방법의 적용", "num": 22, "q": "저작자가 그 저작물에 자신의 이름을 표시하거나 표시하지 않을 수 있는 권리는?", "a": "성명 표시권", "explain": "성명 표시권은 저작자가 자신의 실명 또는 이명을 표시하거나 표시하지 않을 권리입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-2. 저작권 관리 방법의 적용", "num": 23, "q": "저작 재산권 중 저작물을 무선 또는 유선 통신 방법에 의해 송신하거나 이용에 제공하는 권리는?", "a": "공중 송신권", "explain": "공중 송신권은 방송, 전송 등을 포함하여 공중이 수신하게 할 권리입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-2. 저작권 관리 방법의 적용", "num": 24, "q": "다음 중 원저작물을 번역, 편곡, 각색 등의 방법으로 제작한 독창적인 저작물을 무엇이라 하는가?", "a": "2차적 저작물", "explain": "원저작물을 변형하여 독창적으로 만든 것을 2차적 저작물이라 합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-2. 저작권 관리 방법의 적용", "num": 25, "q": "저작권 등록 시 창작한 연월일을 언제 등록해야 창작일로 추정받을 수 있는가?", "a": "창작한 때로부터 1년 이내", "explain": "창작 후 1년이 지나서 등록하면 등록한 날짜에 창작된 것으로 추정되지 않습니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-2. 저작권 관리 방법의 적용", "num": 26, "q": "저작권 등록의 원칙 중 옳은 것은?", "a": "신청이나 촉탁에 의해 절차가 진행되는 신청주의", "explain": "저작권 등록은 당사자의 신청이나 법원의 촉탁에 의해 이루어지는 신청주의가 원칙입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-2. 저작권 관리 방법의 적용", "num": 27, "q": "저작권 침해 시 민사적 구제 수단에 해당하지 않는 것은?", "a": "과태료 및 벌금 부과", "explain": "벌금은 형사 처벌에 해당하며, 민사적 구제 수단은 손해 배상, 정지 청구 등이 있습니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-2. 저작권 관리 방법의 적용", "num": 28, "q": "외국인의 저작물이 우리나라 저작권법에 의해 보호되는 경우가 아닌 것은?", "a": "단순히 해외 인터넷 사이트에만 게시된 모든 외국인의 저작물", "explain": "조약 체결국이거나 국내 거주자 등 일정한 요건을 갖추어야 보호됩니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-2. 저작권 관리 방법의 적용", "num": 29, "q": "저작권 침해 손해액 산정 시, 침해자가 얻은 이익의 액수를 손해액으로 볼 수 있는가?", "a": "예, 손해액으로 추정할 수 있다.", "explain": "저작권법 제125조 제1항에 따라 침해자가 받은 이익을 손해액으로 추정할 수 있습니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-2. 저작권 관리 방법의 적용", "num": 30, "q": "저작권 계약 해석 시 '권리 양도'인지 '이용 허락'인지 불명확한 경우의 일반적인 원칙은?", "a": "저작자에게 권리가 유보되는 것으로 추정한다.", "explain": "계약 해석이 불명확하면 저작자에게 권리가 유보된 것으로 보는 '저작자 유리 추정의 원칙'이 적용됩니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-3. 가상현실 콘텐츠 배포", "num": 1, "q": "가상현실 콘텐츠 플랫폼 중 하드웨어에 귀속되지 않고 콘텐츠 자체의 지속성이 높으며 게임이나 360도 동영상 등이 인기 있는 플랫폼 유형은?", "a": "가상현실 콘텐츠 플랫폼", "explain": "가상현실 콘텐츠 플랫폼은 하드웨어에 귀속되지 않고 콘텐츠 자체의 지속성이 높은 것이 특징입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-3. 가상현실 콘텐츠 배포", "num": 2, "q": "PC 게임 마켓인 Steam을 기반으로 Steam VR을 운영하며 가상현실 게임 플랫폼을 주도하는 기업은?", "a": "Valve", "explain": "Valve는 Steam 마켓을 통해 가상현실 게임 플랫폼인 Steam VR을 운영합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-3. 가상현실 콘텐츠 배포", "num": 3, "q": "가상현실 기술과 쇼핑을 접목하여 가상의 옷을 입어 보고 결제까지 가능한 서비스를 선보인 기업은?", "a": "알리바바", "explain": "알리바바는 가상현실 쇼핑 서비스인 Buy+를 선보였습니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-3. 가상현실 콘텐츠 배포", "num": 4, "q": "유튜브가 가상현실 영상 서비스를 처음으로 시작한 시기는?", "a": "2015년", "explain": "유튜브는 2015년 3월에 가상현실 영상 서비스를 시작했습니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-3. 가상현실 콘텐츠 배포", "num": 5, "q": "유튜브 초기 성공 요인 중 하나로, 당시 다른 방식보다 수십 배 빨리 동영상을 간편하게 공유하게 해준 기술은?", "a": "플래시", "explain": "유튜브는 동영상을 플래시로 재생하는 기술을 통해 동영상 공유를 혁신했습니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-3. 가상현실 콘텐츠 배포", "num": 6, "q": "유튜브 시청 시 해외 회선 문제로 인한 버퍼링을 방지하기 위해 국내 통신사마다 설치하여 운영하는 서버는?", "a": "프록시 서버", "explain": "국내 통신사마다 유튜브 프록시 서버를 두어 원활한 시청이 가능하게 되었습니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-3. 가상현실 콘텐츠 배포", "num": 7, "q": "페이스북 서비스의 어원이 된 'Face Book'의 원래 의미는?", "a": "미국 대학에서 신입생 친목을 위해 공유하던 학생 얼굴 명부", "explain": "페이스북의 어원은 대학에서 학생들의 얼굴과 프로필을 공유하던 책자입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-3. 가상현실 콘텐츠 배포", "num": 8, "q": "가상현실 헤드셋(HMD) 중 스마트폰을 장착하여 탈부착 형태로 사용하는 방식은 무엇이라 하는가?", "a": "모바일 VR 형식", "explain": "모바일 VR은 HMD에 스마트폰을 장착하여 구동하는 방식을 말합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-3. 가상현실 콘텐츠 배포", "num": 9, "q": "HMD에 PC와 디스플레이 기능이 모두 포함되어 일체형으로 구동되는 기기의 대표적 예시는?", "a": "마이크로소프트 홀로렌즈 2", "explain": "홀로렌즈 2는 디스플레이와 연산 장치 하나로 합쳐진 일체형 기기입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-3. 가상현실 콘텐츠 배포", "num": 10, "q": "HTC 바이브에서 사용자의 움직이는 공간을 스캐닝하기 위해 모서리에 설치하는 장비의 명칭은?", "a": "베이스 스테이션(라이트 하우스)", "explain": "베이스 스테이션(라이트 하우스)은 사용자의 공간을 스캐닝하고 움직임을 인식합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-3. 가상현실 콘텐츠 배포", "num": 11, "q": "HTC 바이브의 기술적 특징 중 방 전체를 3차원 공간으로 변화시키는 가능한 기술은?", "a": "룸 스케일", "explain": "HTC 바이브는 룸 스케일 기술을 통해 사용자가 방 안에서 자유롭게 걸을 수 있게 합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-3. 가상현실 콘텐츠 배포", "num": 12, "q": "오큘러스 리프트가 넓은 시야각을 확보하기 위해 채택한 혁신적인 렌즈 보경 방식은?", "a": "어안 렌더링 후 렌즈 왜곡 보경", "explain": "오큘러스 리프트는 어안 렌더링 후 볼록렌즈로 보정하여 넓은 시야각을 개선합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-3. 가상현실 콘텐츠 배포", "num": 13, "q": "오큘러스 리프트 CV1 버전부터 변경된 디스플레이 구성 방식은?", "a": "두 개의 디스플레이 사용", "explain": "오큘러스 리프트 CV1부터는 좌우 각각 독립된 두 개의 디스플레이를 사용합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-3. 가상현실 콘텐츠 배포", "num": 14, "q": "삼성 기어 VR이 오큘러스와 협력하여 처음으로 공개된 연도는?", "a": "2014년", "explain": "기어 VR은 2014년 9월 IFA 2014에서 처음 공개되었습니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-3. 가상현실 콘텐츠 배포", "num": 15, "q": "소니 Playstation VR이 개발 단계에서 사용했던 프로젝트 명칭은?", "a": "프로젝트 모피어스", "explain": "Playstation VR은 2014년 프로젝트 모피어스라는 이름으로 처음 발표되었습니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-3. 가상현실 콘텐츠 배포", "num": 16, "q": "Playstation VR의 최대 장점으로 언급되는 요소는?", "a": "상대적으로 저렴한 구축 비용", "explain": "PS VR은 고가의 PC 대신 PS4만 있으면 구동 가능하여 가격 경쟁력이 높습니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-3. 가상현실 콘텐츠 배포", "num": 17, "q": "Playstation VR의 단점 중 하나로 지목되는 것은?", "a": "비교적 좁은 플레이 가능 반경", "explain": "PS4 카메라를 활용하므로 타 기기에 비해 활동 범위가 좁은 편입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-3. 가상현실 콘텐츠 배포", "num": 18, "q": "가상현실 콘텐츠 배포 시 3D 영상을 유튜브에 업로드할 때 권장되는 영상 형태는?", "a": "위아래로 뒨 영상", "explain": "유튜브에 3D 콘텐츠 업로드 시 위아래로 뒨 영상을 활용해야 합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-3. 가상현실 콘텐츠 배포", "num": 19, "q": "가상현실 영상을 업로드했을 때 360도로 회전하지 않고 평면으로 보이는 원인은?", "a": "메타데이터 누락", "explain": "메타데이터가 포함되지 않으면 영상이 가상현실 모드로 인식되지 않습니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-3. 가상현실 콘텐츠 배포", "num": 20, "q": "HTC 바이브를 사용하기 위해 필요한 PC 사양 중 권장 GPU 사양으로 적절한 것은?", "a": "지포스 GTX 1060 이상", "explain": "HTC 바이브는 지포스 GTX 1060 또는 라데온 RX 480 이상을 권장합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-3. 가상현실 콘텐츠 배포", "num": 21, "q": "유튜브에서 지원하지 않는 동영상 파일 형식은?", "a": "EXE", "explain": "EXE는 실행 파일이며 동영상 형식이 아닙니다. 지원 형식은 MOV, MP4, AVI 등입니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-3. 가상현실 콘텐츠 배포", "num": 22, "q": "가상현실 기기 사용 시 어지럼증과 같은 부작용을 유념해야 하는 개념을 무엇이라 하는가?", "a": "휴먼 팩터", "explain": "가상현실의 부작용이나 인체 영향을 고려하는 개념을 휴먼 팩터라고 합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-3. 가상현실 콘텐츠 배포", "num": 23, "q": "오큘러스 리프트의 디스플레이 해상도(각 눈 기준)는?", "a": "1080x1200", "explain": "오큘러스 리프트 CV1은 각 눈당 1,080x1,200 해상도를 제공합니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-3. 가상현실 콘텐츠 배포", "num": 24, "q": "페이스북이 가상현실 시장에 본격적으로 뛰어들기 위해 2014년에 인수한 회사는?", "a": "Oculus", "explain": "페이스북은 2014년 오큘러스 리프트를 인수하여 VR 시장에 진출했습니다."}, {"subject": "1과목 가상현실 콘텐츠 제작", "unit": "03. 가상현실 콘텐츠 배포", "sub": "3-3. 가상현실 콘텐츠 배포", "num": 25, "q": "가상현실 콘텐츠의 분류 중 주로 교육, 게임, 시뮬레이션 등에 사용되는 형태는?", "a": "체험형 콘텐츠", "explain": "가상현실 콘텐츠는 주로 몰입도가 높은 체험형 콘텐츠로 만들어집니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-1. 인터페이스 요구사항 파악 및 제작", "num": 1, "q": "사용자가 제품, 서비스, 시스템 등을 이용하는 과정에서 발생하는 지식, 기억, 행동, 감정의 총체적 경험을 뜻하는 용어는?", "a": "UX(User Experience)", "explain": "사용자 경험(UX)은 사용자가 시스템 등을 이용하며 느끼는 총체적 경험을 의미합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-1. 인터페이스 요구사항 파악 및 제작", "num": 2, "q": "인간의 경험이 가지는 본질적인 특성으로 언급되지 않은 것은?", "a": "객관성(Objectivity)", "explain": "인간의 경험은 주관적, 맥락적, 총체적 특성을 가지므로 객관적으로 입증하기 어렵습니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-1. 인터페이스 요구사항 파악 및 제작", "num": 3, "q": "사람과 시스템 사이에서 명령을 수행하거나 의사소통이 이루어지도록 하는 접점이자 매개체를 무엇이라 하는가?", "a": "사용자 인터페이스", "explain": "사용자 인터페이스(UI)는 사람과 시스템 사이의 소통이 이루어지는 접점입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-1. 인터페이스 요구사항 파악 및 제작", "num": 4, "q": "UX와 UI의 관계에 대한 설명으로 가장 적절한 '수렵 tip'의 내용은?", "a": "UX는 분석, UI는 도구의 개념이다.", "explain": "수렵 tip에 따르면 UX는 분석, UI는 도구의 개념으로 이해하는 것이 효과적입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-1. 인터페이스 요구사항 파악 및 제작", "num": 5, "q": "어떤 문제를 해결하거나 특정 목적을 위해 사용자가 필요로 하는 조건이나 능력을 뜻하는 용어는?", "a": "요구 사항", "explain": "요구 사항은 제품이나 서비스 개발 시 충족해야 할 조건이나 능력을 의미합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-1. 인터페이스 요구사항 파악 및 제작", "num": 6, "q": "사용자 조사 및 분석을 수행하는 문제 발견 단계의 4가지 유형에 해당하지 않는 것은?", "a": "코드 분석", "explain": "사용자 조사-분석 단계는 시장, 경쟁, 트렌드, 사용자 분석으로 나뉩니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-1. 인터페이스 요구사항 파악 및 제작", "num": 7, "q": "강점(Strength), 약점(Weakness), 기회(Opportunity), 위협(Threat)을 정리하며 파악하는 분석법은?", "a": "SWOT 분석", "explain": "SWOT 분석은 강점, 약점, 기회, 위협을 분석하여 전략을 세우는 방법입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-1. 인터페이스 요구사항 파악 및 제작", "num": 8, "q": "시장 분석을 위해 국내외 특허 정보를 제공하는 전문 기관 사이트는?", "a": "키프리스(KIPRIS)", "explain": "키프리스(KIPRIS)는 국내외 특허 정보를 제공하는 기관입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-1. 인터페이스 요구사항 파악 및 제작", "num": 9, "q": "현재와 과거의 자료에 근거해 미래 사회 변화의 모습을 투사하고 예측하는 분석 방법은?", "a": "트렌드 분석", "explain": "트렌드 분석은 과거/현재 자료를 토대로 미래 변화를 투사하는 방법입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-1. 인터페이스 요구사항 파악 및 제작", "num": 10, "q": "요소 기술적인 분석을 위해 특정 그룹을 대상으로 테스트를 진행하는 기법의 약칭은?", "a": "FGT", "explain": "포커스 그룹 테스트(FGT)는 특정 그룹을 활용한 니즈 파악 방법입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-1. 인터페이스 요구사항 파악 및 제작", "num": 11, "q": "콘텐츠가 의도하는 사용자의 모습을 가상으로 그려 사용자 프로파일을 정의하는 디자인 도구는?", "a": "페르소나", "explain": "페르소나는 타깃 사용자의 성별, 연령, 직업 등을 분석하여 구체화한 가상의 모습입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-1. 인터페이스 요구사항 파악 및 제작", "num": 12, "q": "추상적인 개념의 관계를 시각화하여 정보의 연계 체계의 우선순위를 보여주는 결과물은?", "a": "콘셉트 모델", "explain": "콘셉트 모델은 각 개념의 연계 체계와 기능의 상대적 우선순위를 시각적으로 표현합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-1. 인터페이스 요구사항 파악 및 제작", "num": 13, "q": "사용자의 경험을 선형적으로 시각화하여 이용 전, 후의 개발 순간을 평가하는 방법은?", "a": "사용자 여정 지도", "explain": "사용자 여정 지도는 이용 흐름에 따른 경험을 시각화하여 편의성을 향상시키는 도구입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-1. 인터페이스 요구사항 파악 및 제작", "num": 14, "q": "사용자 여정 지도를 작성할 때 가장 크게 서비스되는 흐름을 설정하고 무엇을 분리해야 하는가?", "a": "공간", "explain": "서비스 흐름을 설정한 후에는 '검색-인터랙션-저장' 등과 같이 공간을 크게 분리하여 설정합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-1. 인터페이스 요구사항 파악 및 제작", "num": 15, "q": "영국 정부 디자인 원칙 가이드 중 '웹 사이트 개발이 아닌 이것을 건설하라'고 강조한 것은?", "a": "디지털 서비스", "explain": "영국 정부 디자인 원칙 8번은 '디지털 서비스를 건설할 것(웹 사이트 개발이 아니다)'입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-1. 인터페이스 요구사항 파악 및 제작", "num": 16, "q": "화면의 기능이 쉽게 이해되고 조작이 자유로워야 한다는 디자인 원칙은?", "a": "가시성의 원칙", "explain": "가시성의 원칙은 기능이 쉽게 이해되고 조작이 자유로워야 함을 의미합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-1. 인터페이스 요구사항 파악 및 제작", "num": 17, "q": "조작 부위만 보고도 결과를 미리 예견할 수 있도록 디자인하는 원칙은?", "a": "조작 결과 예견의 원칙", "explain": "Natural Mapping은 조작 결과에 대한 공간적/기능적 유추가 가능하도록 하는 원칙입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-1. 인터페이스 요구사항 파악 및 제작", "num": 18, "q": "버튼, 그래픽 요소, 텍스트, 컬러 등의 조작 방식이 일관해야 한다는 원칙은?", "a": "일관성의 원칙", "explain": "일관성의 원칙은 조작 방식과 디자인 요소들이 일관하게 유지되어야 함을 뜻합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-1. 인터페이스 요구사항 파악 및 제작", "num": 19, "q": "선택의 여지를 줄여 조작 방법이 명확하도록 만드는 디자인 원칙은?", "a": "제한점 이용의 원칙", "explain": "제한점 이용의 원칙은 조작의 제한 사항을 이용해 선택 폭을 좁혀 명확성을 높이는 것입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-1. 인터페이스 요구사항 파악 및 제작", "num": 20, "q": "도널드 노먼이 정의한 개념으로, 제품을 어떻게 다루면 될지 행동을 자연스럽게 유도하는 속성은?", "a": "어포던스(Affordance)", "explain": "어포던스(행동 유도성)는 사용자가 자연스럽게 특정 행동을 하도록 유도하는 디자인 요소입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-1. 인터페이스 요구사항 파악 및 제작", "num": 21, "q": "어포던스(Affordance)의 한국어 번역 용어로 적절하지 않은 것은?", "a": "심미성", "explain": "어포던스는 행동 유도성, 행위 유발성, 직관성 등으로 번역되지만 심미성과는 다른 개념입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-1. 인터페이스 요구사항 파악 및 제작", "num": 22, "q": "제임스 깁슨이 제시한 어포던스의 정의는 무엇과 액터 사이의 실행 가능한 속성인가?", "a": "세상", "explain": "제임스 깁슨은 세상과 액터(사람/동물) 사이의 실행 가능한 속성을 어포던스라 정의했습니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-1. 인터페이스 요구사항 파악 및 제작", "num": 23, "q": "조작 오류를 쉽게 발견하고 수정하기 용이하게 해야 한다는 디자인 원칙은?", "a": "조작 오류의 원칙", "explain": "조작 오류의 원칙은 오류 발견과 수정을 용이하게 디자인하는 원칙입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-1. 인터페이스 요구사항 파악 및 제작", "num": 24, "q": "사용자 분석 결과를 바탕으로 실제 제작에 앞서 디자인 개선안을 확인하기 위해 제작하는 것은?", "a": "프로토타입", "explain": "제안된 디자인 개선안을 검증하기 위해 프로토타입을 제작합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-1. 인터페이스 요구사항 파악 및 제작", "num": 25, "q": "인터페이스 디자인 절차 중 실제 사용자와 관련 업무 대상자를 중심으로 실시하는 평가는?", "a": "사용성 평가(Usability Testing)", "explain": "프로토타입 제작 후 사용성 평가를 실시하여 디자인을 수정 보완합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-1. 인터페이스 요구사항 파악 및 제작", "num": 26, "q": "UX 디자인이 좋았을 때 사용자가 느끼는 감정에 해당하지 않는 것은?", "a": "좌절(Frustration)", "explain": "좌절은 UX 디자인이 나빴을 때 나타나는 부정적 감정입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-1. 인터페이스 요구사항 파악 및 제작", "num": 27, "q": "니즈 파악을 위해 실시하는 설문 조사에서 설문 소요 시간은 어느 정도가 바람직한가?", "a": "5분 이내", "explain": "설문은 피로감을 줄이기 위해 5분 이내에 마무리될 수 있는 수준이 바람직합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-1. 인터페이스 요구사항 파악 및 제작", "num": 28, "q": "인터뷰를 진행할 때 신뢰도 높은 의견을 얻기 위한 가장 중요한 자세는?", "a": "경청하는 자세 유지", "explain": "상대방의 의견을 끄집어내기 위해 경청하는 자세를 유지하는 것이 중요합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-1. 인터페이스 요구사항 파악 및 제작", "num": 29, "q": "사용자 인터페이스의 검측 중 '디스플레이 휘도나 키보드 배열' 등과 관련된 것은?", "a": "인간 공학적인 물리적 검측", "explain": "모양, 배열 등은 인간 공학적인 물리적 검측에 해당합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-1. 인터페이스 요구사항 파악 및 제작", "num": 30, "q": "사용자 여정 지도를 서비스 이용 시점에 따라 나눌 때 적절한 구분은?", "a": "이용 전-중-후", "explain": "사용자 여정 지도는 서비스 이용 전, 중, 후로 구분하여 작성합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-2. 시나리오 기반 스토리보드 작성", "num": 1, "q": "스토리보드의 정의로 가장 적절한 것은?", "a": "연속된 정지 이미지의 흐름으로 스토리를 미리 영상화시키는 계획표", "explain": "스토리보드는 영상물을 제작하기 위해 연속된 정지 이미지 흐름으로 스토리를 미리 영상화시키는 계획표를 의미합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-2. 시나리오 기반 스토리보드 작성", "num": 2, "q": "스토리보드의 구성 요소 중 '각본'에 대한 설명으로 옳은 것은?", "a": "대사나 동작 등의 제작에 필요한 사항을 적은 글", "explain": "각본이란 대사나 동작 등의 상연이나 제작에 필요한 사항을 적은 글을 의미합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-2. 시나리오 기반 스토리보드 작성", "num": 3, "q": "스토리보드의 구성 요소 중 '객체 요소'에 해당하지 않는 것은?", "a": "이야기의 흐름인 에피소드", "explain": "에피소드는 과정 요소에 해당하며, 객체 요소는 텍스트, 이미지, 오디오 등 멀티미디어 객체를 의미합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-2. 시나리오 기반 스토리보드 작성", "num": 4, "q": "스토리라인 구성 시 가장 중요하게 고려해야 할 점은 무엇인가?", "a": "상대방에게 공감을 불러일으킬 수 있는 내용이어야 한다", "explain": "스토리라인은 상대방에게 공감을 불러일으킬 수 있는 내용이어야 하며, 제작 목적과 내용을 하나로 엮어주어야 합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-2. 시나리오 기반 스토리보드 작성", "num": 5, "q": "스토리보드에서 주요 화면(Cut)의 개수를 설정할 때의 특징은?", "a": "장면이 너무 많으면 이야기가 산만해질 수 있다", "explain": "장면의 개수는 많으면 산만해지고, 적으면 정보 전달이 어려울 수 있으므로 목적에 맞는 적절한 유지가 중요합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-2. 시나리오 기반 스토리보드 작성", "num": 6, "q": "스토리보드에서 주요 분위기의 색감을 설정하는 '톤(Tone)'에 대한 설명은?", "a": "동화적, 리얼리티, 따뜻함 등 스토리 목적에 맞게 설정한다", "explain": "분위기는 스토리라인의 목적에 어울리도록 동화적, 따뜻함, 차가움 등 색상의 톤을 잡아주는 요소입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-2. 시나리오 기반 스토리보드 작성", "num": 7, "q": "전체 개발 프로세스 측면에서 스토리보드가 갖는 위상은?", "a": "계속 확인하고 검토하는 기준이 되는 일종의 안내서 문서", "explain": "스토리보드는 전체 개발 프로세스에서 계속 확인하고 검토하는 기준 문서이므로 꼼꼼하게 작성해야 합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-2. 시나리오 기반 스토리보드 작성", "num": 8, "q": "증강현실 인터랙션 설계 요소 중 가장 최우선적으로 설계해야 하는 요소는?", "a": "반응", "explain": "반응은 인터랙션의 최우선 설계 요소이며, 모든 객체는 사소한 동작이라도 반응을 해야 합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-2. 시나리오 기반 스토리보드 작성", "num": 9, "q": "증강현실에서 객체 반응의 방향성이자 지시점으로 이해되는 설계 요소는?", "a": "초점", "explain": "초점은 객체를 증강시키기 전 필요한 설계 요소로, 객체 반응의 방향성이자 지시점으로 이해됩니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-2. 시나리오 기반 스토리보드 작성", "num": 10, "q": "증강현실에서 인터랙션이 일어날 수 있는 위치로 이동을 유도하는 '주목' 요소는?", "a": "지시선", "explain": "지시선은 효과적인 체험 유도를 위해 인터랙션이 일어날 위치로 이동하도록 유도하는 중요한 주목 요소입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-2. 시나리오 기반 스토리보드 작성", "num": 11, "q": "증강현실 인터랙션 설계 시 '접근성' 측면에서 가장 적당 높이는?", "a": "일반적인 평균 키의 허리 높이", "explain": "접근성 고려 시 지나치게 높거나 좁은 공간은 피해야 하며, 대개 평균 키의 허리에 해당하는 높이가 가장 적당합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-2. 시나리오 기반 스토리보드 작성", "num": 12, "q": "증강현실에서 상호 작용의 완성을 위해 제공되는 보상이나 물리적 동작은?", "a": "피드백", "explain": "피드백은 증강 이후의 보상이나 햅틱 반응 등 상호 작용을 완성시키는 요소를 의미합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-2. 시나리오 기반 스토리보드 작성", "num": 13, "q": "제품이나 서비스를 이용할 목표 집단을 대표하는 가상의 인물을 표현하는 기법은?", "a": "페르소나", "explain": "페르소나는 목표 집단 안의 다양한 유형을 대표하는 가상의 인물, 캐릭터 등을 표현하는 기법입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-2. 시나리오 기반 스토리보드 작성", "num": 14, "q": "페르소나를 활용한 설계의 장점으로 가장 적절한 것은?", "a": "객관적이고 이타적인 관점에서의 설계를 가능하게 한다", "explain": "페르소나는 '엔비는 어떻게 행동할까?'와 같은 질문을 통해 객관적이고 이타적인 관점을 제공합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-2. 시나리오 기반 스토리보드 작성", "num": 15, "q": "페르소나가 설계자와 이해관계자 사이에서 수행하는 역할은?", "a": "프로젝트 전체의 역할을 잇는 공통 언어 제공", "explain": "페르소나는 전체 맥락 속에서 이야기 구조를 지향하며 공통적 용어를 파생시키는 공통 언어의 계기를 줍니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-2. 시나리오 기반 스토리보드 작성", "num": 16, "q": "인간과 시스템 사이에서 일어나는 경보나 서비스의 교환 및 커뮤니케이션 방식은?", "a": "인터랙션", "explain": "인터랙션이란 인간과 시스템 등 관계 사이에서 일어나는 일종의 교환 및 커뮤니케이션 방식을 정의합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-2. 시나리오 기반 스토리보드 작성", "num": 17, "q": "주목의 효과를 위해 단순 이벤트 발생 외에 캐릭터가 수행하는 부가 이벤트는?", "a": "아이 콘택트(Eye contact)", "explain": "주목 효과를 위해 이용자와 증강 객체 간의 아이 콘택트, 대화, 터치 등의 부가 이벤트가 필요합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-2. 시나리오 기반 스토리보드 작성", "num": 18, "q": "시나리오의 유형 중 '사용자 행태, 대상, 문제점과 요구 사항, 목적' 등을 항목별로 작성하는 것은?", "a": "구문형 시나리오", "explain": "구문형 시나리오는 사용자 행태, 대상, 문제점, 목적 등을 분류하여 기술하는 방식입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-2. 시나리오 기반 스토리보드 작성", "num": 19, "q": "스토리보드의 구성 요소 중 '화면 요소'에 대한 설명으로 옳은 것은?", "a": "실제와 가상의 정보를 제시하는 디스플레이 화면", "explain": "화면은 자본에 의해 사용자 모니터나 스크린에 보이는 영상을 의미하며 실제와 가상 정보를 제시합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-2. 시나리오 기반 스토리보드 작성", "num": 20, "q": "개발자가 개발해야 하는 것에 대해 기술한 '행위 요구 사항'을 무엇이라 하는가?", "a": "기능 요구 사항", "explain": "기능 요구 사항이란 개발자가 개발해야 하는 것에 대하여 기술한 행위 요구 사항(behavior requirements)입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-2. 시나리오 기반 스토리보드 작성", "num": 21, "q": "기능 요구 사항의 필수 작성 요건 네 가지에 포함되지 않는 것은?", "a": "개발 인력의 개인 프로필", "explain": "필수 요건은 애플리케이션 명칭, 기능 명칭, 세부 내용, 관련 요구 사항 정보 네 가지입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-2. 시나리오 기반 스토리보드 작성", "num": 22, "q": "비기능 요구 사항에 해당하지 않는 항목은 무엇인가?", "a": "직결적인 시스템 개발 기능", "explain": "성능, 인터페이스, 데이터, 보안, 품질은 비기능이며, 직접적인 개발 업무는 기능 요구 사항입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-2. 시나리오 기반 스토리보드 작성", "num": 23, "q": "기능 요구 사항 추출 시 자문회의보다 브레인스토밍이 권장되는 이유는?", "a": "자문회의는 일방적 의견 수렴과 비판이 동반될 수 있어서", "explain": "자문회의는 일방적 의견 수렴과 비판이 동반될 수 있으므로 자유로운 의견 제시가 가능한 브레인스토밍이 바람직합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-2. 시나리오 기반 스토리보드 작성", "num": 24, "q": "기술적 부분의 전문가 선정 시 고려해야 할 사항으로 가장 적절한 것은?", "a": "다양한 경험을 거친 전문가를 섭외한다", "explain": "기술 전문가는 한 가지 기술에만 전문적인 사람보다 다양한 경험을 거친 전문가를 섭외하는 것이 좋습니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-2. 시나리오 기반 스토리보드 작성", "num": 25, "q": "설문 조사를 통해 사용자 니즈를 파악할 때 설문지 작성의 유의점은?", "a": "피로감을 고려해 최대 5분 이내에 마무리되게 한다", "explain": "설문은 대상자의 피로감을 고려하여 최대 5분 이내에 마무리할 수 있는 수준에서 작성해야 합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-3. 인터페이스 프로토타입 제작", "num": 1, "q": "프로토타입의 제작 목적 중 '위험 부담 최소화'를 위해 대량 생산 전 수행하는 것은?", "a": "대량 생산 전 시험용", "explain": "대량 생산 전 시험용 프로토타입은 본격적인 제품 개발 도중 충단이나 최소의 어려움을 고려하여 위험 부담을 최소화하는 목적을 가집니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-3. 인터페이스 프로토타입 제작", "num": 2, "q": "최근 콘텐츠 개발에서 1차 결과물을 시장에 내놓고 지속적으로 보완 및 업데이트하는 기법은?", "a": "진화형 프로토타이핑", "explain": "완성도 높은 제품 개발을 위하여 지속적으로 업데이트되는 결과물을 보여주는 것을 진화형 프로토타이핑이라고 합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-3. 인터페이스 프로토타입 제작", "num": 3, "q": "PC형 프로토타이핑 저작 도구의 특징으로 옳은 것은?", "a": "인터넷이 연결되어 있지 않아도 사용할 수 있으며 안정적이다.", "explain": "PC형 도구는 PC에 설치하여 사용하는 특징으로 인터넷 연결 없이도 사용할 수 있으며 보다 안정적인 운영이 가능합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-3. 인터페이스 프로토타입 제작", "num": 4, "q": "프로토타입 제작 시 아이디어 표현의 초기 단계에서 가장 효율적인 방법은?", "a": "종이와 연필을 이용한 필기도구 활용", "explain": "필기도구는 아이디어 표현의 초기 버전을 간단하고 익숙하게 표현할 수 있어 매우 풍부하게 표현할 수 있는 장점이 있습니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-3. 인터페이스 프로토타입 제작", "num": 5, "q": "인터페이스 제작 시 화면을 분할하여 계략적인 설계를 진행할 때 사용하는 기법은?", "a": "다이어그램을 통한 레이아웃 설정", "explain": "화면을 분할하여 계략적인 레이아웃을 설정하기 위해 다이어그램을 활용합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-3. 인터페이스 프로토타입 제작", "num": 6, "q": "프로토타이핑 저작 도구 선정 시 '협업의 효율성'을 위해 고려해야 할 사항은?", "a": "팀과 협력사와의 병용성 및 협의", "explain": "동일한 소프트웨어를 사용하는 것이 효율적이므로 팀과 협력사와의 협업을 통해 병용성을 확보하는 것이 바람직합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-3. 인터페이스 프로토타입 제작", "num": 7, "q": "제이콥 닐슨의 사용성 평가 원칙 중 '시스템 실제 세계 반영'에 해당하는 사례는?", "a": "음성 동작 버튼에 마이크 아이콘 활용", "explain": "시스템을 실제 일상에서 사용하는 이용자의 언어나 상식, 논리적 순서(마이크 아이콘 등)를 따르는 것이 실제 세계 반영 원칙입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-3. 인터페이스 프로토타입 제작", "num": 8, "q": "항상 이용자가 시스템의 상태를 알 수 있도록 적절한 피드백을 주어야 한다는 원칙은?", "a": "시스템 가시화", "explain": "적절한 시간에 피드백을 주어 이용자가 시스템 상태를 알게 하는 것은 시스템 가시화 평가 원칙입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-3. 인터페이스 프로토타입 제작", "num": 9, "q": "사용자가 오류를 범했을 때 동작을 취소하거나 재실행할 수 있게 하는 통제권을 주는 원칙은?", "a": "사용자 통제권과 자유도", "explain": "오류 발생 시 동작 취소나 재실행이 가능하도록 통제권을 주는 것은 시스템 통제권과 자유도 평가 원칙입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-3. 인터페이스 프로토타입 제작", "num": 10, "q": "사용성 평가 프로세스에서 '평가 목적, 방법, 참가자'를 정하는 가장 첫 단계는?", "a": "검증 계획", "explain": "검증 계획 단계는 평가 프로세스의 시작으로 언제, 어디서, 누구를 대상으로 평가할지 계획하는 단계입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-3. 인터페이스 프로토타입 제작", "num": 11, "q": "본 평가 전 1~2명을 대상으로 실시하여 실험 절차를 개선하고 대책을 모색하는 과정은?", "a": "사전 평가", "explain": "사전 평가는 본 평가 전 문제점을 찾고 실험 절차를 개선하며 돌발 상황에 대비하기 위해 실시합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-3. 인터페이스 프로토타입 제작", "num": 12, "q": "평가 진행자가 참여자의 특성을 빠르게 파악하여 편안하게 대함으로써 최선의 결과를 이끄는 것은?", "a": "친밀감 형성 능력", "explain": "참여자들과 빠른 친밀감 형성은 참여자가 편안하고 안정되게 느낄 수 있도록 하여 최선의 결과를 이끌어냅니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-3. 인터페이스 프로토타입 제작", "num": 13, "q": "사용성 평가 결과 분석 시 수집하는 '측정 가능한 데이터'로 적절하지 않은 것은?", "a": "참가자의 개인 연락처 정보", "explain": "측정 가능한 데이터는 수행 시간, 에러 등이며 개인 정보 보호를 위해 참가자 성명이나 연락처는 노출되지 않아야 합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-3. 인터페이스 프로토타입 제작", "num": 14, "q": "사용성 테스트의 목적 중 웹/모바일 인터페이스 유용성에 대한 데이터를 수집 분석하는 정의는?", "a": "사용성 테스트", "explain": "사용성 테스트는 웹/모바일 환경의 기능 문제점을 파악하고 인터페이스 유용성에 대한 데이터를 수집 분석하는 과정입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-3. 인터페이스 프로토타입 제작", "num": 15, "q": "전문가가 설계 법칙(오래 전부터 사용된 법칙)을 적용하여 디자인을 평가하는 방법은?", "a": "휴리스틱 평가", "explain": "휴리스틱이란 오래 전부터 사용되어 온 일반적인 설계 법칙을 의미하며 전문가가 이를 적용해 평가합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-3. 인터페이스 프로토타입 제작", "num": 16, "q": "사용성 테스트 목표 체크리스트에서 '로딩 속도가 적절한가'를 평가하는 항목은?", "a": "기능성", "explain": "사용성 테스트 목표 체크리스트에서 기능성 소분류로 로딩 속도의 적절성을 평가합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-3. 인터페이스 프로토타입 제작", "num": 17, "q": "사용성 테스트 반복 진행 시 피로도가 쌓이고 집중력이 흐트러지는 것을 방지하기 위한 권장 횟수는?", "a": "1~2번", "explain": "사용성 테스트는 반복 진행 시 피로도가 쌓이고 집중력이 흐트러질 수 있으므로 1~2번만 진행하는 것이 좋습니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-3. 인터페이스 프로토타입 제작", "num": 18, "q": "클라이언트 설득 시 명확한 데이터와 근거를 마련하여 대응하는 사고 방식은?", "a": "논리적 사고", "explain": "논리적 사고는 단순한 언변이 아닌 명확한 데이터와 근거(테스트 결과 등)를 마련하는 것을 의미합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-3. 인터페이스 프로토타입 제작", "num": 19, "q": "지나치게 고작식하지 않고 열린 마음으로 클라이언트의 요구에 대처하는 사고는?", "a": "탄력적 사고", "explain": "열린 마음으로 탄력적으로 대체할 수 있도록 준비하는 것은 탄력적 사고입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-3. 인터페이스 프로토타입 제작", "num": 20, "q": "협의 시 내 주장만 늘어놓지 않고 상대방의 요구 사항을 파악하여 대처하는 사고는?", "a": "이타적 사고", "explain": "상대방의 요구 사항을 파악하고 대처하는 것은 이타적 사고에 해당합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-3. 인터페이스 프로토타입 제작", "num": 21, "q": "UI/UX 디자인 수정 시 근거를 남기기 위해 프로토타입 변경보다 앞서 수행해야 하는 것은?", "a": "스토리보드 수정", "explain": "수정 근거와 내역을 확인하기 위해 스토리보드 수정을 우선 실시한 후 프로토타입을 변경해야 합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-3. 인터페이스 프로토타입 제작", "num": 22, "q": "정보 전달의 명확성과 전체 주제와의 어울림을 평가하는 가독성 측면의 핵심 요소는?", "a": "폰트(서체)", "explain": "폰트(서체)는 디자인과 가독성 측면에서 가장 중요한 체크포인트입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-3. 인터페이스 프로토타입 제작", "num": 23, "q": "디자인 정체성(Identity)을 보장받기 위한 요소가 아닌 것은?", "a": "복잡성", "explain": "정체성을 보장받기 위해서는 지속성, 단순성, 관계성 요소가 적절히 녹아 들어가야 합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-3. 인터페이스 프로토타입 제작", "num": 24, "q": "이용자가 정보를 기억하게 하지 말고 최소한의 노력으로 인지하도록 주요 요소를 가시화하는 원칙은?", "a": "인지적 노력 최소화", "explain": "이용자가 정보를 기억하게 하지 말고 최소한의 노력으로 인지할 수 있게 하는 것은 인지적 노력 최소화 원칙입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "01. 증강현실 UI/UX 설계", "sub": "1-3. 인터페이스 프로토타입 제작", "num": 25, "q": "프로토타입 제작 효율을 위해 창조적 작업 전 바탕에 깔고 작업을 권장하는 소스는?", "a": "모티브 소스", "explain": "모방을 통한 창조를 위해 모티브 소스를 배경으로 배치하고 작업하는 것이 효율적입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "02. 증강현실 콘텐츠 개발", "sub": "2-1. 증강현실 콘텐츠 설계서 작성", "num": 1, "q": "증강현실(AR) 기술의 세 가지 핵심 기능에 해당하지 않는 것은?", "a": "환경에게 제리된 가상 환경 제공", "explain": "증강현실은 실제 환경 위에 가상 요소를 융합하는 기술이며, 환경을 격리하는 것은 가상현실(VR)의 특징입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "02. 증강현실 콘텐츠 개발", "sub": "2-1. 증강현실 콘텐츠 설계서 작성", "num": 2, "q": "종이를 이용한 프로토타이핑의 특징으로 옳은 것은?", "a": "사용자의 엄청난 상상력이 필요하다", "explain": "종이 프로토타이핑은 빠르고 쉽지만, 많은 상상력이 필요하고 상호 작용 문제점을 다 반영하지 못할 수 있습니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "02. 증강현실 콘텐츠 개발", "sub": "2-1. 증강현실 콘텐츠 설계서 작성", "num": 3, "q": "지리적 위치 데이터를 활용하여 가상 객체를 특정 GPS 좌표에 고정하는 프로토타이핑 방식은?", "a": "위치 기반 프로토타이핑", "explain": "위치 기반 프로토타이핑은 GPS 좌표를 활용하여 실제 세계 위치에서 경험이 어떻게 전개되는지 테스트합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "02. 증강현실 콘텐츠 개발", "sub": "2-1. 증강현실 콘텐츠 설계서 작성", "num": 4, "q": "마이크로소프트 홀로렌즈(HoloLens)와 같은 장치를 개발할 때 주로 사용하는 프로토타이핑 도구는?", "a": "홀로그래픽 프로토타이핑", "explain": "홀로그래픽 프로토타이핑은 혼합 현실 공간에서 3D 모델과 상호 작용을 생성할 때 사용됩니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "02. 증강현실 콘텐츠 개발", "sub": "2-1. 증강현실 콘텐츠 설계서 작성", "num": 5, "q": "이미지 라벨링, 데이터 확인, 설문 조사 등 인간 지능이 필요한 '마이크로 작업'을 위한 플랫폼은?", "a": "Amazon Mechanical Turk", "explain": "아마존 메카니컬 터크(AMT)는 빠르게 완료할 수 있는 작고 개별적인 마이크로 작업을 위한 플랫폼입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "02. 증강현실 콘텐츠 개발", "sub": "2-1. 증강현실 콘텐츠 설계서 작성", "num": 6, "q": "자체 구축과 크라우드 컴퓨팅을 비교했을 때, 크라우드 컴퓨팅의 장점으로 볼 수 있는 것은?", "a": "잠재적으로 낮은 총 비용과 빠른 개발 시간", "explain": "크라우드 컴퓨팅은 인프라와 장비 비용이 낮고 잠재적으로 개발 속도가 빠를 수 있습니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "02. 증강현실 콘텐츠 개발", "sub": "2-1. 증강현실 콘텐츠 설계서 작성", "num": 7, "q": "AR 콘텐츠 개발에서 '자체 구축 방향'이 가장 적합한 경우는 언제인가?", "a": "엄격한 보안과 기밀 유지가 필요한 경우", "explain": "프로젝트에 민감하거나 비밀 정보가 포함된 경우 자체 구축을 통해 보안 조치를 강화하는 것이 적합합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "02. 증강현실 콘텐츠 개발", "sub": "2-1. 증강현실 콘텐츠 설계서 작성", "num": 8, "q": "문제를 '어떻게(How to)' 해결해야 하는지에 초점을 맞추어 컴퓨터에게 명령을 내리는 프로그래밍 방식은?", "a": "명령형 프로그래밍", "explain": "명령형 프로그래밍은 해결 방법에 초점을 맞추며, 선언형은 무엇(What)을 해결할지에 집중합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "02. 증강현실 콘텐츠 개발", "sub": "2-1. 증강현실 콘텐츠 설계서 작성", "num": 9, "q": "객체 지향 프로그래밍에서 생물체나 물체를 만들기 위한 '청사진' 또는 '계획'에 해당하는 개념은?", "a": "클래스(Class)", "explain": "클래스는 객체의 외모와 행동에 대한 세부 정보를 담고 있는 청사진 역할을 합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "02. 증강현실 콘텐츠 개발", "sub": "2-1. 증강현실 콘텐츠 설계서 작성", "num": 10, "q": "객체에서 공통된 속성과 행위를 추출하여 모델링하는 객체 지향의 특징은?", "a": "추상화(Abstraction)", "explain": "공통된 속성과 행위를 추출하여 클래스를 정의하는 것을 추상화라고 합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "02. 증강현실 콘텐츠 개발", "sub": "2-1. 증강현실 콘텐츠 설계서 작성", "num": 11, "q": "클래스 내부에 동일한 이름의 행위를 여럿 정의하되 파라미터 타입이나 개수를 다르게 하는 것은?", "a": "메소드 오버로딩", "explain": "메소드 오버로딩은 이름은 같지만 파라미터가 다른 여러 기능을 정의하는 다형성의 구현 방법입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "02. 증강현실 콘텐츠 개발", "sub": "2-1. 증강현실 콘텐츠 설계서 작성", "num": 12, "q": "상속받은 메소드를 그대로 사용하지 않고 하위 클래스에서 자신에게 맞게 새로 만들어 사용하는 것은?", "a": "메소드 오버라이딩", "explain": "상위 클래스의 메소드를 하위 클래스에서 재정의하여 사용하는 것을 메소드 오버라이딩이라고 합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "02. 증강현실 콘텐츠 개발", "sub": "2-1. 증강현실 콘텐츠 설계서 작성", "num": 13, "q": "'하나의 클래스는 한 가지 종류의 책임(기능)만 가져야 한다'는 객체 지향 설계 원칙은?", "a": "SRP(단일 책임 원칙)", "explain": "단일 책임 원칙(SRP)은 클래스의 응집력을 높이기 위한 가치 책임만 두도록 권고합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "02. 증강현실 콘텐츠 개발", "sub": "2-1. 증강현실 콘텐츠 설계서 작성", "num": 14, "q": "'고차원 모듈은 저차원 모듈에 의존하면 안 되며, 추상 클래스나 인터페이스를 사용하라'는 원칙은?", "a": "DIP", "explain": "의존 관계 역전의 원칙(DIP)은 구체적인 클래스보다 추상적인 인터페이스에 의존할 것을 권고합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "02. 증강현실 콘텐츠 개발", "sub": "2-1. 증강현실 콘텐츠 설계서 작성", "num": 15, "q": "시스템 외부에 존재하며 시스템과 상호 작용하여 유스 케이스를 구동하는 주체는?", "a": "행위자(Actor)", "explain": "행위자(액터)는 시스템 외부의 사용자나 타 시스템 등 유스 케이스를 실행하는 주체입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "02. 증강현실 콘텐츠 개발", "sub": "2-1. 증강현실 콘텐츠 설계서 작성", "num": 16, "q": "시스템을 구성하는 객체들의 타입과 그들 간의 '정적 관계'를 표현하는 다이어그램은?", "a": "클래스 다이어그램", "explain": "클래스 다이어그램은 클래스 이름, 속성, 메소드 및 정적 관계를 표현한 직사각형 형태의 도표입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "02. 증강현실 콘텐츠 개발", "sub": "2-1. 증강현실 콘텐츠 설계서 작성", "num": 17, "q": "객체들의 동적인 제어 흐름을 '메시지 발생 시간'에 따라 순차적으로 표현하는 다이어그램은?", "a": "시퀀스 다이어그램", "explain": "시퀀스 다이어그램은 객체 간의 상호 작용을 시간 순서에 따라 표현합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "02. 증강현실 콘텐츠 개발", "sub": "2-1. 증강현실 콘텐츠 설계서 작성", "num": 18, "q": "하드웨어에 물리적으로 배치될 수 있는 프로세서나 장치 등 '전산 자원'을 노드로 표현하는 것은?", "a": "배치 다이어그램", "explain": "배치 다이어그램은 시스템 배치에 필요한 물리적 전산 자원인 노드를 표현합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "02. 증강현실 콘텐츠 개발", "sub": "2-1. 증강현실 콘텐츠 설계서 작성", "num": 19, "q": "AR UI의 특성 중, 역사적 랜드마크를 가리키면 관련 정보를 보여주는 것과 가장 밀접한 것은?", "a": "상황별 정보", "explain": "주변 환경이나 대상을 기반으로 그 상황에 맞는 정보를 제공하는 것이 상황별 정보 특성입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "02. 증강현실 콘텐츠 개발", "sub": "2-1. 증강현실 콘텐츠 설계서 작성", "num": 20, "q": "AR UI 디자인 시 사용자의 실제 세계 시야를 방해하지 않도록 설계해야 하는 이유는?", "a": "안전과 편안함 때문", "explain": "AR UI는 실제 세계 시야를 방해하거나 장시간 사용 시 불편을 주지 않도록 인전과 편안함을 고려해야 합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "02. 증강현실 콘텐츠 개발", "sub": "2-1. 증강현실 콘텐츠 설계서 작성", "num": 21, "q": "내 조작 결과를 사용자가 조작 부위만 보고도 미리 예측 가능하게 설계해야 한다는 원칙은?", "a": "조작 결과 예측의 원칙", "explain": "조작 부위의 디자인을 통해 실행 결과를 미리 알 수 있게 하는 것을 내추럴 매핑(Natural Mapping)이라고 합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "02. 증강현실 콘텐츠 개발", "sub": "2-1. 증강현실 콘텐츠 설계서 작성", "num": 22, "q": "사용자에게 앱의 기능을 어떻게 조작하면 될지에 대한 '단서'를 제공해야 한다는 원칙은?", "a": "행동 유도성의 원칙", "explain": "어포던스(행동 유도성) 원칙은 사용자가 어떻게 조작해야 할지 직관적인 단서를 주는 것을 의미합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "02. 증강현실 콘텐츠 개발", "sub": "2-1. 증강현실 콘텐츠 설계서 작성", "num": 23, "q": "데이터 모델링의 단계 중 엔티티, 속성, 관계 등을 사용하여 ER 다이어그램을 생성하는 단계는?", "a": "개념 데이터 모델링", "explain": "요구 사항을 기반으로 개체-관계(ER) 다이어그램 등 전반적인 구조를 만드는 것이 개념 모델링입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "02. 증강현실 콘텐츠 개발", "sub": "2-1. 증강현실 콘텐츠 설계서 작성", "num": 24, "q": "개념적 모델을 특정 DBMS 기술이나 제약 사항(테이블, 기본 키, 외래 키 등)에 맞춰 변환하는 단계는?", "a": "논리 데이터 모델링", "explain": "논리 데이터 모델링 단계에서는 개념 모델을 실제 데이터베이스 시스템 형식에 맞게 정의합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "02. 증강현실 콘텐츠 개발", "sub": "2-1. 증강현실 콘텐츠 설계서 작성", "num": 25, "q": "데이터를 테이블과 열로 구성하고 기본 키와 외래 키를 사용하여 관계를 설정하는 기술 유형은?", "a": "관계형 데이터 모델", "explain": "관계형 데이터 모델(RDBMS)은 테이블 간의 관계를 기반으로 데이터를 구조화합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "02. 증강현실 콘텐츠 개발", "sub": "2-1. 증강현실 콘텐츠 설계서 작성", "num": 26, "q": "데이터를 '트리 구조'로 표현하며 상위 노드와 하위 노드 간 1:N 관계가 존재하는 모델은?", "a": "계층형 데이터 모델", "explain": "계층형 데이터 모델은 조직도와 같이 데이터를 트리 구조로 계층화하여 표현합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "02. 증강현실 콘텐츠 개발", "sub": "2-1. 증강현실 콘텐츠 설계서 작성", "num": 27, "q": "노드(Node)와 엣지(Edge)로 구성되어 소셜 네트워크나 추천 시스템에서 유용한 모델은?", "a": "그래프 데이터 모델", "explain": "차세대 데이터 모델 중 그래프 모델은 복잡한 관계를 노드와 엣지로 효율적으로 표현합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "02. 증강현실 콘텐츠 개발", "sub": "2-1. 증강현실 콘텐츠 설계서 작성", "num": 28, "q": "증강현실 콘텐츠 설계 시 '다각형 수(Polygon Count)'나 '텍스처 크기'를 고려해야 하는 이유는?", "a": "콘텐츠 최적화와 성능 보장을 위해서", "explain": "원활한 프레임 속도와 최소 지연 시간을 유지하기 위해 리소스를 최적화해야 합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "02. 증강현실 콘텐츠 개발", "sub": "2-1. 증강현실 콘텐츠 설계서 작성", "num": 29, "q": "UML 관계 중 '전체 객체가 없어도 부분 객체는 독립적으로 유지되는 관계'는?", "a": "집약 관계", "explain": "집약 관계는 전체와 부분 사이의 독립적 관계를 나타내며, 합성 관계는 의존적 관계를 나타냅니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "02. 증강현실 콘텐츠 개발", "sub": "2-1. 증강현실 콘텐츠 설계서 작성", "num": 30, "q": "증강현실 콘텐츠 제작 전, 장치가 AR 프레임워크(ARKit, ARCore 등)를 지원하는지 확인하는 과정은?", "a": "기술적 실현 가능성 평가", "explain": "기술적 실현 가능성 체크리스트에는 대상 장치의 플랫폼 및 프레임워크 지원 여부 확인이 포함됩니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "02. 증강현실 콘텐츠 개발", "sub": "2-2. 증강현실 콘텐츠 객체 제작", "num": 1, "q": "증강현실 저작 도구 선정 시 고려해야 할 주요 사항으로 가장 거리가 먼 것은?", "a": "콘텐츠 마케팅을 위한 소셜 미디어 연계 편의성", "explain": "저작 도구 선정 시에는 플랫폼 호환성, 자산 관리, 스크립팅 지원, 추적/렌더링 품질 등을 고려하며, 광고 예산 편성은 도구 선정의 직접적인 고려 사항이 아닙니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "02. 증강현실 콘텐츠 개발", "sub": "2-2. 증강현실 콘텐츠 객체 제작", "num": 2, "q": "마이크로소프트 홀로렌즈(HoloLens)의 디스플레이 및 특징에 대한 설명으로 옳은 것은?", "a": "투명 디스플레이를 사용하며 제스처 및 음성 인식을 지원한다.", "explain": "HoloLens는 투명 디스플레이를 사용하며 현실과 가상을 병합한 경험을 제공하고, 제스처 및 음성 인식 기능을 갖추고 있습니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "02. 증강현실 콘텐츠 개발", "sub": "2-2. 증강현실 콘텐츠 객체 제작", "num": 3, "q": "오큘러스 퀘스트(Oculus Quest) 플랫폼의 주요 기능으로 옳은 것은?", "a": "가상 환경에서의 이동 및 상호 작용, 터치 컨트롤러 사용", "explain": "Oculus Quest는 고해상도 내장형 디스플레이를 사용하여 가상 환경에서의 이동과 터치 컨트롤러를 이용한 상호 작용을 제공합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "02. 증강현실 콘텐츠 개발", "sub": "2-2. 증강현실 콘텐츠 객체 제작", "num": 4, "q": "딥러닝을 활용한 3차원 객체 추적 방법 중, 객체의 전체 영역을 포함하는 모델을 사용하여 CNN으로 학습시키는 방식은?", "a": "템플릿 매칭", "explain": "템플릿 매칭 방법은 객체 추적을 위하여 객체의 전체 영역을 포함하는 템플릿을 사용하여 CNN으로 학습시키는 방식입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "02. 증강현실 콘텐츠 개발", "sub": "2-2. 증강현실 콘텐츠 객체 제작", "num": 5, "q": "E2E(End-to-End) 접근법에 대한 설명으로 가장 적절한 것은?", "a": "입력 이미지와 출력된 객체 포즈 사이의 직접적인 매핑을 학습한다", "explain": "E2E 접근법은 입력 이미지와 출력된 객체 포즈 사이의 직접적인 매핑을 학습하며, 특징 추출 단계를 건너뛰어 빠르고 간단한 모델을 만들 수 있습니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "02. 증강현실 콘텐츠 개발", "sub": "2-2. 증강현실 콘텐츠 객체 제작", "num": 6, "q": "특징 추출/매칭 방식에서 객체 추적을 위해 사용하는 강력한 특징점 검출 알고리즘이 아닌 것은?", "a": "ICP", "explain": "SIFT, SURF, CNN 기반 추출은 특징점 검출 및 매칭에 사용되지만, ICP는 획득한 포즈를 최적화하는 알고리즘에 해당합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "02. 증강현실 콘텐츠 개발", "sub": "2-2. 증강현실 콘텐츠 객체 제작", "num": 7, "q": "증강현실 콘텐츠 객체 생성의 일반적인 단계 중 가장 먼저 수행되어야 하는 것은?", "a": "객체 디자인(외형, 크기, 색상 설계)", "explain": "증강현실 객체 생성 시 가장 먼저 3D 모델링 도구 등을 사용하여 객체의 외형, 크기, 색상 등을 설계하는 디자인 단계를 거칩니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "02. 증강현실 콘텐츠 개발", "sub": "2-2. 증강현실 콘텐츠 객체 제작", "num": 8, "q": "3D 모델링 단계에서 개체에 '실제와 같은 외관'을 구현하기 위해 형태 제작 후 수행하는 작업은?", "a": "텍스처 적용", "explain": "3D 모델링 소프트웨어를 사용하여 형태를 만든 후, 텍스처를 적용하여 실제와 같은 외관을 구현합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "02. 증강현실 콘텐츠 개발", "sub": "2-2. 증강현실 콘텐츠 객체 제작", "num": 9, "q": "증강현실 객체 생성 과정 중 '트래킹(Tracking) 설정'의 주요 목적은 무엇인가?", "a": "객체가 현실 세계에서 올바른 위치에 나타나고 추적되게 하기 위해", "explain": "트래킹 설정은 카메라를 통해 주변 환경을 인식하고 객체의 위치, 방향, 크기 등을 추적하여 현실 세계에 올바르게 배치하기 위함입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "02. 증강현실 콘텐츠 개발", "sub": "2-2. 증강현실 콘텐츠 객체 제작", "num": 10, "q": "AR 객체가 현실과 조화롭게 보이도록 그림자와 반사 효과를 주고, 질감과 광택을 구현하는 단계는?", "a": "라이팅 및 세이딩", "explain": "라이팅 및 세이딩 단계에서는 조명 효과를 적용하여 그림자와 반사 효과를 주고, 세이딩 기법으로 질감과 광택을 구현합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "02. 증강현실 콘텐츠 개발", "sub": "2-2. 증강현실 콘텐츠 객체 제작", "num": 11, "q": "사용자와 AR 객체 간의 상호 작용을 위해 구현하는 입력 방식에 해당하지 않는 것은?", "a": "SQL 명령어 직접 입력", "explain": "상호 작용을 위한 입력 방식으로는 터치, 제스처, 음성 인식 등이 사용되며, SQL 명령어 입력은 데이터베이스 연동 시 내부 처리 방식입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "02. 증강현실 콘텐츠 개발", "sub": "2-2. 증강현실 콘텐츠 객체 제작", "num": 12, "q": "웹 서버와 클라이언트 간의 통신을 위한 인터페이스로, AR 앱에서 외부 시스템과 데이터를 주고받을 때 주로 사용하는 것은?", "a": "REST API", "explain": "REST API는 웹 서버와 클라이언트 간의 통신 인터페이스로, 증강현실 앱에서 외부 시스템과 데이터를 주고받을 때 널리 사용됩니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "02. 증강현실 콘텐츠 개발", "sub": "2-2. 증강현실 콘텐츠 객체 제작", "num": 13, "q": "사물인터넷(IoT) 분야에서 사용되는 경량 메시징 프로토콜로, AR 앱과 외부 장치 간의 통신에 활용되는 것은?", "a": "MQTT", "explain": "MQTT는 IoT 분야에서 사용되는 경량 메시징 프로토콜로, AR 앱과 외부 시스템과 데이터를 주고받는 데 유용합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "02. 증강현실 콘텐츠 개발", "sub": "2-2. 증강현실 콘텐츠 객체 제작", "num": 14, "q": "웹 서버와 클라이언트 간의 '양방향' 실시간 통신을 구현하기 위해 사용하는 프로토콜은?", "a": "웹소켓", "explain": "웹소켓은 웹 서버와 클라이언트 간의 양방향 통신을 위한 프로토콜입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "02. 증강현실 콘텐츠 개발", "sub": "2-2. 증강현실 콘텐츠 객체 제작", "num": 15, "q": "증강현실 콘텐츠의 원활한 성능(최적화)을 위해 설계 시 가장 중요하게 고려해야 할 리소스 요소는?", "a": "다각형 수와 텍스처 크기", "explain": "원활한 성능과 최소 지연 시간을 보장하기 위해 다각형 수, 텍스처 크기, 애니메이션 복잡성 등을 최적화해야 합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "02. 증강현실 콘텐츠 개발", "sub": "2-2. 증강현실 콘텐츠 객체 제작", "num": 16, "q": "팀 단위의 개발 프로젝트에서 변경 사항을 효율적으로 추적하고 관리하기 위해 필수적으로 적용되어야 하는 기능은?", "a": "협업 및 버전 관리", "explain": "팀 작업 시에는 협업 기능과 버전 관리를 지원하는 도구를 사용하는 것이 변경 사항 관리에 효율적입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "02. 증강현실 콘텐츠 개발", "sub": "2-2. 증강현실 콘텐츠 객체 제작", "num": 17, "q": "그래픽 리소스를 콘텐츠에 무리 없이 통합하기 위해 필요한 '그래픽 디자인 원리'가 아닌 것은?", "a": "데이터베이스 정규화", "explain": "그래픽 디자인 원리에는 색상 이론, 타이포그래피, 레이아웃, 시각적 계층 구조 등이 포함되며, 데이터베이스 정규화는 데이터 설계 원리입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "02. 증강현실 콘텐츠 개발", "sub": "2-2. 증강현실 콘텐츠 객체 제작", "num": 18, "q": "AR 경험 내에서 수익화를 위해 제품을 전자상거래 플랫폼에 연결하거나 광고를 표시하는 과정을 무엇이라 하는가?", "a": "상업 객체 연결", "explain": "수익화 요소(광고, 쇼핑몰 연결 등)를 통합하는 과정을 상업 객체 연결이라 합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "02. 증강현실 콘텐츠 개발", "sub": "2-2. 증강현실 콘텐츠 객체 제작", "num": 19, "q": "증강현실 콘텐츠의 객체 성능을 최적화하는 방법으로 적절하지 않은 것은?", "a": "3D 모델의 폴리곤 수 무제한 확장", "explain": "폴리곤(다각형) 수를 무제한으로 늘리면 장치 리소스에 부담을 주어 성능이 저하되므로, 다각형 수를 관리하고 최적화해야 합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "02. 증강현실 콘텐츠 개발", "sub": "2-2. 증강현실 콘텐츠 객체 제작", "num": 20, "q": "AR 콘텐츠 설계 및 제작 시 사용자 '안전'을 위해 최우선으로 고려해야 할 사항은?", "a": "물리적 환경 분석을 통한 위험 요소 장애물 확인", "explain": "사용자 안전을 위해 AR 콘텐츠가 체험될 물리적 환경을 분석하고, 위험하거나 장애물이 없는지 확인하는 것이 필수적입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "03. 증강현실 콘텐츠 데이터 관리", "sub": "3-1. 데이터베이스 구조 설계 및 생성", "num": 1, "q": "데이터베이스의 정의 중 '특정 조직의 여러 사용자가 함께 소유하고 이용할 수 있어야 하는 데이터'를 의미하는 것은?", "a": "공유 데이터(Shared Data)", "explain": "공유 데이터는 특정 조직의 여러 사용자가 함께 소유하고 이용할 수 있는 공용 데이터를 의미합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "03. 증강현실 콘텐츠 데이터 관리", "sub": "3-1. 데이터베이스 구조 설계 및 생성", "num": 2, "q": "데이터베이스의 특징 중 '데이터 중복을 최소화하고 통제가 가능한 중복만 허용하는 데이터'를 무엇이라 하는가?", "a": "통합 데이터", "explain": "통합 데이터는 데이터의 중복성을 최소화하고 통제가 가능한 중복만 허용하는 데이터의 집합입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "03. 증강현실 콘텐츠 데이터 관리", "sub": "3-1. 데이터베이스 구조 설계 및 생성", "num": 3, "q": "현실 세계의 문자, 그림 등을 컴퓨터에서 사용될 수 있도록 형식화한 표현이며, 반드시 '타입'과 '값' 속성을 가지는 것은?", "a": "데이터(Data)", "explain": "데이터는 현실 세계의 형상을 형식화한 표현이며, 데이터베이스에서 타입과 값이라는 속성을 가집니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "03. 증강현실 콘텐츠 데이터 관리", "sub": "3-1. 데이터베이스 구조 설계 및 생성", "num": 4, "q": "사용자에게 어떠한 의미를 주는 특별한 형태의 데이터로, 특정 목적을 위한 프로세싱 작업을 통해 산출된 결과물은?", "a": "정보", "explain": "정보는 특정한 목적을 위하여 데이터 프로세싱 작업을 통하여 산출된 의미 있는 데이터입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "03. 증강현실 콘텐츠 데이터 관리", "sub": "3-1. 데이터베이스 구조 설계 및 생성", "num": 5, "q": "데이터베이스에 저장, 관리하여 기업이나 기관의 목표 달성을 위해 활용되는 데이터로 정확성, 일관성, 최신성 등이 기준이 중요한 것은?", "a": "운영 데이터", "explain": "운영 데이터는 조직의 목표 달성을 위해 데이터베이스에 저장 관리되는 데이터로 정확성, 일관성, 최신성 등의 관리가 필요합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "03. 증강현실 콘텐츠 데이터 관리", "sub": "3-1. 데이터베이스 구조 설계 및 생성", "num": 6, "q": "분석 데이터의 특징으로 가장 적절하지 않은 것은?", "a": "실시간 갱신성", "explain": "분석 데이터는 요약 레벨, 주제 지향성, 통합성, 시계열성, 비휘발성 등이 기준에 따라 관리되며, 실시간 갱신은 주로 운영 데이터의 특징입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "03. 증강현실 콘텐츠 데이터 관리", "sub": "3-1. 데이터베이스 구조 설계 및 생성", "num": 7, "q": "정보 시스템 간 데이터를 이동할 때 소스 데이터와 타깃 데이터 간의 연결 정보를 관리하는 데이터는?", "a": "매핑 데이터", "explain": "매핑 데이터는 정보 시스템 데이터를 다른 시스템으로 이동할 때 사용하는 소스와 타깃 데이터 간의 매핑 정보를 관리합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "03. 증강현실 콘텐츠 데이터 관리", "sub": "3-1. 데이터베이스 구조 설계 및 생성", "num": 8, "q": "데이터의 정합성을 확보하고 품질 유지 및 개선 활동을 수행하기 위해 기본적으로 관리되어야 하는 데이터는?", "a": "품질 관리 데이터", "explain": "품질 관리 데이터는 데이터 정합성 확보와 품질 개선 활동을 수행할 때 기본적으로 관리되는 데이터입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "03. 증강현실 콘텐츠 데이터 관리", "sub": "3-1. 데이터베이스 구조 설계 및 생성", "num": 9, "q": "데이터베이스 설계 과정 중 '사용자의 요구 사항을 분석하여 정보의 구조를 ER 다이어그램으로 표현'하는 단계는?", "a": "개념적 설계", "explain": "개념적 설계 단계에서는 요구 분석 결과를 바탕으로 정보의 구조를 개념적으로 표현하며, 주로 ERD를 사용합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "03. 증강현실 콘텐츠 데이터 관리", "sub": "3-1. 데이터베이스 구조 설계 및 생성", "num": 10, "q": "개념적 설계 단계에서 도출된 구조를 특정 DBMS가 처리할 수 있는 테이블 구조로 변환하는 단계는?", "a": "논리적 설계", "explain": "논리적 설계 단계에서는 개념적 구조를 특정 DBMS의 데이터 모델(관계형 등)에 맞춰 논리적 구조로 변환합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "03. 증강현실 콘텐츠 데이터 관리", "sub": "3-1. 데이터베이스 구조 설계 및 생성", "num": 11, "q": "데이터베이스의 설계 중 레코드 길이, 인덱스 설계, 저장 경로 등 물리적 저장 장치와 관련된 사항을 결정하는 단계는?", "a": "물리적 설계", "explain": "물리적 설계는 논리적 데이터 구조를 물리적 저장 장치에 저장할 수 있는 물리적 구조로 설계하는 단계입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "03. 증강현실 콘텐츠 데이터 관리", "sub": "3-1. 데이터베이스 구조 설계 및 생성", "num": 12, "q": "ER 모델의 구성 요소 중 '독립된 의미를 가지고 관리되는 대상'을 의미하며 사각형으로 표시하는 것은?", "a": "개체(Entity)", "explain": "개체(Entity)는 데이터베이스에서 관리하려는 독립적인 대상이며 ERD에서 사각형으로 표현됩니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "03. 증강현실 콘텐츠 데이터 관리", "sub": "3-1. 데이터베이스 구조 설계 및 생성", "num": 13, "q": "ER 모델에서 개체가 가지고 있는 고유한 특성을 의미하며 타원형으로 표시하는 것은?", "a": "속성", "explain": "속성(Attribute)은 개체가 가지는 구체적인 정보 항목이나 특성을 나타내며 ERD에서 타원으로 표현됩니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "03. 증강현실 콘텐츠 데이터 관리", "sub": "3-1. 데이터베이스 구조 설계 및 생성", "num": 14, "q": "ER 모델에서 개체와 개체 사이의 연관성을 의미하며 마름모꼴로 표시하는 것은?", "a": "관계", "explain": "관계(Relationship)는 개체 간의 의미 있는 연관성을 나타내며 ERD에서 마름모로 표현됩니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "03. 증강현실 콘텐츠 데이터 관리", "sub": "3-1. 데이터베이스 구조 설계 및 생성", "num": 15, "q": "데이터 모델의 관계 유형 중 '한 명의 학생이 여러 개의 과목을 수강할 수 있고, 한 과목도 여러 학생이 수강할 수 있는' 관계는?", "a": "N:M 관계", "explain": "양측 개체 타입에서 서로 여러 개의 인스턴스와 관계를 맺을 수 있는 것을 N:M(다대다) 관계라고 합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "03. 증강현실 콘텐츠 데이터 관리", "sub": "3-1. 데이터베이스 구조 설계 및 생성", "num": 16, "q": "데이터베이스에서 중복을 제거하고 데이터 이상 현상을 방지하기 위해 테이블 구조를 분해하는 과정은?", "a": "정규화(Normalization)", "explain": "정규화는 테이블의 중복을 최소화하고 무결성을 유지하기 위해 테이블을 적절히 분해하는 과정입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "03. 증강현실 콘텐츠 데이터 관리", "sub": "3-1. 데이터베이스 구조 설계 및 생성", "num": 17, "q": "정규화 단계 중 '모든 속성 값이 원자 값(Atomic Value)을 가져야 한다'는 조건은?", "a": "제1정규형(1NF)", "explain": "제1정규형은 테이블의 모든 속성 값이 원자 값으로 구성되어야 한다는 조건입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "03. 증강현실 콘텐츠 데이터 관리", "sub": "3-1. 데이터베이스 구조 설계 및 생성", "num": 18, "q": "제1정규형을 만족하면서, 기본키가 아닌 모든 속성이 기본키에 대해 '완전 함수 종속'인 상태는?", "a": "제2정규형(2NF)", "explain": "제2정규형은 제1정규형을 만족하고, 기본키의 일부분에만 종속되는 부분 함수 종속을 제거한 상태입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "03. 증강현실 콘텐츠 데이터 관리", "sub": "3-1. 데이터베이스 구조 설계 및 생성", "num": 19, "q": "제2정규형을 만족하면서, 기본키가 아닌 속성 간의 '이행적 함수 종속'을 제거한 상태는?", "a": "제3정규형(3NF)", "explain": "제3정규형은 제2정규형을 만족하고, 속성 간의 이행적 종속성(A→B, B→C이면 A→C)을 제거한 것입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "03. 증강현실 콘텐츠 데이터 관리", "sub": "3-1. 데이터베이스 구조 설계 및 생성", "num": 20, "q": "개체를 유일하게 식별할 수 있는 속성 집합으로, NULL 값을 가질 수 없는 제약 조건이 있는 키는?", "a": "기본키(Primary Key)", "explain": "기본키는 개체를 식별하는 핵심 키로, 중복될 수 없으며 NULL 값을 가질 수 없습니다(개체 무결성)."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "03. 증강현실 콘텐츠 데이터 관리", "sub": "3-1. 데이터베이스 구조 설계 및 생성", "num": 21, "q": "다른 테이블의 기본키를 참조하여 테이블 간의 연결을 유지하는 키는?", "a": "외래키", "explain": "외래키는 다른 릴레이션의 기본키를 참조하는 속성으로, 참조 무결성을 유지하는 역할을 합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "03. 증강현실 콘텐츠 데이터 관리", "sub": "3-1. 데이터베이스 구조 설계 및 생성", "num": 22, "q": "무결성 제약 조건 중 '기본키의 속성 값은 NULL일 수 없으며 중복되어서도 안 된다'는 원칙은?", "a": "개체 무결성", "explain": "개체 무결성은 모든 테이블이 기본키를 가져야 하며 그 값은 고유하고 NULL이 아니어야 한다는 원칙입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "03. 증강현실 콘텐츠 데이터 관리", "sub": "3-1. 데이터베이스 구조 설계 및 생성", "num": 23, "q": "외래키 값은 참조하는 테이블의 기본키 값과 일치하거나 NULL이어야 한다는 제약 조건은?", "a": "참조 무결성", "explain": "참조 무결성은 릴레이션 간의 참조 관계를 정의하며 데이터 일관성을 유지하기 위한 제약 조건입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "03. 증강현실 콘텐츠 데이터 관리", "sub": "3-1. 데이터베이스 구조 설계 및 생성", "num": 24, "q": "데이터베이스 언어 중 '테이블을 생성(CREATE), 수정(ALTER), 삭제(DROP)'하는 기능은 어디에 속하는가?", "a": "데이터 정의어(DDL)", "explain": "DDL(Data Definition Language)은 데이터베이스 스키마를 정의하거나 변경하기 위해 사용됩니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "03. 증강현실 콘텐츠 데이터 관리", "sub": "3-1. 데이터베이스 구조 설계 및 생성", "num": 25, "q": "데이터베이스의 데이터를 조회(SELECT), 삽입(INSERT), 수정(UPDATE), 삭제(DELETE)하는 SQL 문은 어디에 속하는가?", "a": "DML", "explain": "DML(Data Manipulation Language)은 데이터를 실질적으로 처리하기 위해 사용되는 언어입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "03. 증강현실 콘텐츠 데이터 관리", "sub": "3-1. 데이터베이스 구조 설계 및 생성", "num": 26, "q": "권한 부여(GRANT) 및 취소(REVOKE)와 같이 데이터 제어를 담당하는 언어는?", "a": "DCL", "explain": "DCL(Data Control Language)은 데이터 무결성 유지, 보안, 권한 제어 등을 담당합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "03. 증강현실 콘텐츠 데이터 관리", "sub": "3-1. 데이터베이스 구조 설계 및 생성", "num": 27, "q": "데이터베이스의 효율적인 관리를 위해 수행하는 '데이터베이스 안전 관리' 활동에 해당하지 않는 것은?", "a": "임시 파일 무단 삭제", "explain": "DB 안전 관리는 데이터 보호, 권한 관리, 백업 등을 포함하며, 무단 파일 삭제는 관련 활동이 아닙니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "03. 증강현실 콘텐츠 데이터 관리", "sub": "3-1. 데이터베이스 구조 설계 및 생성", "num": 28, "q": "데이터베이스의 중복성을 최소화하되 통제가 가능한 중복만 허용하는 특징을 무엇이라 하는가?", "a": "통합 데이터", "explain": "통합 데이터는 데이터 중복을 최소화하여 관리 효율을 높인 상태를 의미합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "03. 증강현실 콘텐츠 데이터 관리", "sub": "3-1. 데이터베이스 구조 설계 및 생성", "num": 29, "q": "데이터 속성 중 '문자형(CHAR)', '숫자형(INT)' 등 데이터의 형태를 정의하는 속성은?", "a": "타입(Type)", "explain": "타입(Type)은 데이터가 가질 수 있는 값의 종류를 정의하는 속성입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "03. 증강현실 콘텐츠 데이터 관리", "sub": "3-1. 데이터베이스 구조 설계 및 생성", "num": 30, "q": "데이터베이스 설계 완료 후 실제 데이터를 입력하기 전, 테이블 간의 관계가 올바른지 확인하고 인덱스를 생성하는 과정은 어느 단계의 마지막 부분인가?", "a": "물리적 설계", "explain": "물리적 설계 단계에서는 성능 최적화를 위해 인덱스 정의, 저장 방식 결정 등을 수행합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "03. 증강현실 콘텐츠 데이터 관리", "sub": "3-2. 데이터 재분류·삭제 (일부 문항 누락)", "num": 1, "q": "데이터베이스의 구조와 제약 조건에 대한 정의를 의미하며, ANSI 표준에서 3단계로 정의된 것은?", "a": "스키마(Schema)", "explain": "스키마는 사용자, 설계자, 개발자의 관점에 따라 데이터베이스를 기술하고 관계를 정의한 표준입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "03. 증강현실 콘텐츠 데이터 관리", "sub": "3-2. 데이터 재분류·삭제 (일부 문항 누락)", "num": 2, "q": "3층 스키마의 3단계 계층에 해당하지 않는 것은?", "a": "관계 스키마", "explain": "3층 스키마는 외부, 개념, 내부 스키마의 3단계로 구성됩니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "03. 증강현실 콘텐츠 데이터 관리", "sub": "3-2. 데이터 재분류·삭제 (일부 문항 누락)", "num": 3, "q": "사용자 관점 또는 응용 프로그램 관점에서 데이터베이스를 정의한 스키마는?", "a": "외부 스키마", "explain": "외부 스키마는 사용자 관점에서 업무와 관련 있는 데이터 접근을 정의하며 뷰(View)를 표시합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "03. 증강현실 콘텐츠 데이터 관리", "sub": "3-2. 데이터 재분류·삭제 (일부 문항 누락)", "num": 4, "q": "설계자 관점에서 전체 데이터베이스 내의 규칙과 구조를 표현한 스키마는?", "a": "개념 스키마", "explain": "개념 스키마는 전체 사용자 집단의 관점에서 통합된 데이터베이스 구조를 표현합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "03. 증강현실 콘텐츠 데이터 관리", "sub": "3-2. 데이터 재분류·삭제 (일부 문항 누락)", "num": 5, "q": "개발자 관점에서 데이터베이스의 물리적 저장 구조를 정의한 스키마는?", "a": "내부 스키마", "explain": "내부 스키마는 데이터 저장 구조, 레코드 구조, 인덱스 등 물리적 저장 방식을 정의합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "03. 증강현실 콘텐츠 데이터 관리", "sub": "3-2. 데이터 재분류·삭제 (일부 문항 누락)", "num": 12, "q": "일반적인 일대일(1:1) 관계를 외래 키로 표현하는 가장 일반적인 방법은?", "a": "서로의 기본 키를 주고받아 외래 키로 지정한다.", "explain": "일반적인 일대일 관계는 릴레이션들이 서로의 기본 키를 주고받아 외래 키로 지정합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "03. 증강현실 콘텐츠 데이터 관리", "sub": "3-2. 데이터 재분류·삭제 (일부 문항 누락)", "num": 13, "q": "일대다 관계에서 한 개체 릴레이션만 필수적으로 참여할 때 외래 키는 어디에 위치하는가?", "a": "필수적으로 참여하는 릴레이션에 포함한다.", "explain": "필수적으로 참여하는 개체 릴레이션에만 외래 키를 포함시키는 것이 효율적입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "03. 증강현실 콘텐츠 데이터 관리", "sub": "3-2. 데이터 재분류·삭제 (일부 문항 누락)", "num": 14, "q": "일대일 관계에서 모든 개체가 필수적으로 참여할 때 권장되는 변환 방식은?", "a": "두 릴레이션을 하나의 릴레이션으로 통합한다.", "explain": "모든 개체가 필수 참여하는 1:1 관계는 하나의 릴레이션으로 통합하여 관리하는 것이 좋습니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "03. 증강현실 콘텐츠 데이터 관리", "sub": "3-2. 데이터 재분류·삭제 (일부 문항 누락)", "num": 15, "q": "E-R 다이어그램의 '다중 값 속성'은 어떻게 릴레이션으로 변환하는가?", "a": "별도의 릴레이션으로 변환하여 생성한다.", "explain": "다중 값 속성은 제1정규형 위반을 피하기 위해 별도의 릴레이션으로 변환해야 합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "03. 증강현실 콘텐츠 데이터 관리", "sub": "3-2. 데이터 재분류·삭제 (일부 문항 누락)", "num": 16, "q": "데이터베이스의 논리적인 작업 단위이자 회복 및 병행 제어의 단위인 것은?", "a": "트랜잭션", "explain": "트랜잭션은 데이터베이스 연산들을 모아 놓은 논리적 작업 단위이자 복구 단위입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "03. 증강현실 콘텐츠 데이터 관리", "sub": "3-2. 데이터 재분류·삭제 (일부 문항 누락)", "num": 17, "q": "트랜잭션의 연산들이 모두 정상 실행되거나 하나도 실행되지 않아야 하는 특성은?", "a": "원자성(Atomicity)", "explain": "원자성은 all-or-nothing 방식으로, 전체 성공 혹은 전체 취소를 보장합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "03. 증강현실 콘텐츠 데이터 관리", "sub": "3-2. 데이터 재분류·삭제 (일부 문항 누락)", "num": 18, "q": "트랜잭션 수행 중 장애 발생 시 지금까지의 처리를 모두 취소하고 이전 상태로 되돌리는 것은 어느 특성 때문인가?", "a": "원자성", "explain": "원자성은 장애 발생 시 트랜잭션 전 상태로 되돌리는 회복 기능을 요구합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "03. 증강현실 콘텐츠 데이터 관리", "sub": "3-2. 데이터 재분류·삭제 (일부 문항 누락)", "num": 19, "q": "수행 중인 트랜잭션의 중간 결과를 다른 트랜잭션이 접근할 수 없도록 보장하는 특성은?", "a": "격리성", "explain": "격리성은 완료되지 않은 트랜잭션의 결과를 다른 이가 볼 수 없게 해주는 특성입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "03. 증강현실 콘텐츠 데이터 관리", "sub": "3-2. 데이터 재분류·삭제 (일부 문항 누락)", "num": 20, "q": "트랜잭션 성공 후 결과가 영구적으로 데이터베이스에 반영되어야 한다는 특성은?", "a": "지속성(Durability)", "explain": "지속성은 성공적으로 완료된 결과가 영구적이어야 함을 의미합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "03. 증강현실 콘텐츠 데이터 관리", "sub": "3-2. 데이터 재분류·삭제 (일부 문항 누락)", "num": 21, "q": "트랜잭션 수행 중 논리적 오류나 데이터 입력 잘못으로 인해 발생하는 장애 유형은?", "a": "트랜잭션 장애", "explain": "트랜잭션 장애는 논리적 오류나 자원 과다 사용 등으로 인해 중단되는 상태를 말합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "03. 증강현실 콘텐츠 데이터 관리", "sub": "3-2. 데이터 재분류·삭제 (일부 문항 누락)", "num": 22, "q": "하드웨어 결함으로 메인 메모리의 정보가 손실되는 장애 유형은?", "a": "시스템 장애", "explain": "시스템 장애는 하드웨어 결함 등으로 메인 메모리 정보가 손실된 상태입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "03. 증강현실 콘텐츠 데이터 관리", "sub": "3-2. 데이터 재분류·삭제 (일부 문항 누락)", "num": 23, "q": "디스크 장치의 결함으로 데이터베이스의 일부 또는 전체가 손상된 상태는?", "a": "미디어 장애", "explain": "미디어 장애는 디스크 헤드 손상 등 물리적 저장 매체의 결함으로 인한 손상을 의미합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "03. 증강현실 콘텐츠 데이터 관리", "sub": "3-2. 데이터 재분류·삭제 (일부 문항 누락)", "num": 24, "q": "장애가 발생하면 저장된 데이터가 손실되는 메인 메모리와 같은 저장 장치는?", "a": "휘발성 저장 장치", "explain": "휘발성 저장 장치는 장애 시 데이터가 손실되는 장치(메인 메모리 등)입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "03. 증강현실 콘텐츠 데이터 관리", "sub": "3-2. 데이터 재분류·삭제 (일부 문항 누락)", "num": 25, "q": "이러한 장애가 발생하더라도 데이터 복사본을 통해 영구적으로 보존할 수 있는 방법은?", "a": "안전 저장 장치", "explain": "안전 저장 장치는 복사본을 여러 개 만들어 영구적 저장을 보장하는 개념입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "03. 증강현실 콘텐츠 데이터 관리", "sub": "3-2. 데이터 재분류·삭제 (일부 문항 누락)", "num": 26, "q": "디스크 블록의 데이터를 메인 메모리 버퍼 블록으로 이동시키는 연산은?", "a": "input", "explain": "input 연산은 디스크 블록의 데이터를 메인 메모리로 가져오는 작업입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "03. 증강현실 콘텐츠 데이터 관리", "sub": "3-2. 데이터 재분류·삭제 (일부 문항 누락)", "num": 27, "q": "메인 메모리 버퍼 블록에 있는 데이터를 응용 프로그램의 변수로 읽어 오는 연산은?", "a": "read", "explain": "read 연산은 메모리 버퍼의 데이터를 프로그램 변수로 읽어 오는 것입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "03. 증강현실 콘텐츠 데이터 관리", "sub": "3-2. 데이터 재분류·삭제 (일부 문항 누락)", "num": 28, "q": "메인 메모리 버퍼 블록의 데이터를 디스크 블록으로 이동시키는 연산은?", "a": "output", "explain": "output 연산은 메모리 버퍼의 처리 결과를 디스크로 보내는 작업입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "03. 증강현실 콘텐츠 데이터 관리", "sub": "3-2. 데이터 재분류·삭제 (일부 문항 누락)", "num": 29, "q": "장애 발생 전 데이터베이스 전체를 별도의 장소에 복사해 두는 회복 연산은?", "a": "dump", "explain": "dump 연산은 데이터베이스 전체를 다른 저장 장치에 복사해 두는 것입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "03. 증강현실 콘텐츠 데이터 관리", "sub": "3-2. 데이터 재분류·삭제 (일부 문항 누락)", "num": 30, "q": "데이터베이스 회복의 핵심 원리가 장애 발생 시 원래 상태로 복원하기 위해 사용하는 기법은?", "a": "데이터 중복", "explain": "회복의 핵심 원리는 데이터를 미리 복사해 두는 '데이터 중복'을 이용하는 것입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-1. 증강현실 실시간 서비스 구성", "num": 1, "q": "방송 송출 워크플로서 스튜디오나 외부 소스를 녹화 또는 합성하여 주조정실로 보내는 곳은?", "a": "부조정실", "explain": "부조정실은 스튜디오 영상, 오디오, 자막 등을 합성하여 최종 영상을 주조정실로 보내는 역할을 합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-1. 증강현실 실시간 서비스 구성", "num": 2, "q": "주조정실 송출 시스템 중 광고 시스템, 자막기 등을 자동으로 제어하는 시스템은?", "a": "APC", "explain": "APC(Auto Program Control)는 송출 서버, 자막기 등을 자동으로 제어하는 자동 송출 시스템입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-1. 증강현실 실시간 서비스 구성", "num": 3, "q": "APC 시스템의 구성 요소 중 장비를 직접 제어하는 서버(Control Device Server)는?", "a": "CDS", "explain": "CDS는 APC 구성 요소 중 장비 제어를 직접 담당하는 서버입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-1. 증강현실 실시간 서비스 구성", "num": 4, "q": "부조정실 생방송 시스템에서 최종 합성을 위해 처리하는 요소가 아닌 것은?", "a": "광고 스케줄 편성", "explain": "광고 스케줄 편성은 주로 주조정실이 방송 정보 시스템의 업무입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-1. 증강현실 실시간 서비스 구성", "num": 5, "q": "1인 미디어 생방송 시스템 구성의 최소 장비에 해당하지 않는 것은?", "a": "대형 비디오 스위처", "explain": "1인 미디어는 최소한의 시스템으로 구성되며, 대형 비디오 스위처는 소규모 이상의 시스템에서 사용됩니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-1. 증강현실 실시간 서비스 구성", "num": 6, "q": "소규모 생방송 시스템에서 여러 대의 카메라 영상 중 원하는 화면을 선택하는 장비는?", "a": "비디오 스위처", "explain": "비디오 스위처(Switcher)는 다수의 영상 소스 중 송출할 화면을 선택하고 전환하는 장비입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-1. 증강현실 실시간 서비스 구성", "num": 7, "q": "촬영된 AV 신호를 컴퓨터에서 파일 형태로 바꾸기 위해 필요한 장치는?", "a": "캡처 장치", "explain": "캡처 장치는 외부 AV 신호를 PC에서 처리 가능한 디지털 파일 형태(스트림)로 변환합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-1. 증강현실 실시간 서비스 구성", "num": 8, "q": "클라우드 라이브 스테이션 생성 시 기본적으로 지정되는 Output Protocol은?", "a": "HLS & DASH", "explain": "라이브 스테이션의 기본 출력 프로토콜은 웹 환경에 적합한 HLS와 DASH입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-1. 증강현실 실시간 서비스 구성", "num": 9, "q": "라이브 스테이션 채널 생성 시 반드시 함께 연동하여 사용해야 하는 네트워크 서비스는?", "a": "CDN", "explain": "라이브 스테이션은 대규모 사용자에게 안정적으로 영상을 전달하기 위해 반드시 CDN과 연동해야 합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-1. 증강현실 실시간 서비스 구성", "num": 10, "q": "라이브 스테이션의 '타임머신' 기능을 통해 최대 몇 시간 전까지 되돌려 볼 수 있는가?", "a": "6시간", "explain": "타임머신(DVR) 기능을 통해 최대 6시간 전까지 영상을 되돌려 볼 수 있습니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-1. 증강현실 실시간 서비스 구성", "num": 11, "q": "영상 소스의 연결이 준비된 상태로, 채널 생성 직후나 방송 종료 후에 나타나는 상태는?", "a": "준비", "explain": "'준비' 상태는 영상 소스 연결이 가능한 상태를 의미합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-1. 증강현실 실시간 서비스 구성", "num": 12, "q": "라이브 스테이션 채널 상세 정보 중 방송 진행을 위해 인코더(OBS 등)에 입력해야 하는 URL은?", "a": "RTMP URL", "explain": "인코더에서 영상을 보낼 때(Ingest) RTMP URL을 사용합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-1. 증강현실 실시간 서비스 구성", "num": 13, "q": "라이브 스테이션에서 송출 이벤트 로그를 확인할 수 있는 최대 기간은?", "a": "최근 7일", "explain": "송출 이벤트 로그는 최근 7일 이내의 내역만 확인 가능합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-1. 증강현실 실시간 서비스 구성", "num": 14, "q": "하나의 라이브 영상을 유튜브, 트위치, 코딩 등 여러 플랫폼에 동시 송출하는 기능은?", "a": "재스트림", "explain": "재스트림 기능을 통해 다양한 방송 플랫폼으로 동시에 생방송을 송출할 수 있습니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-1. 증강현실 실시간 서비스 구성", "num": 15, "q": "Re-Stream 상품 중 'Standard' 등급에서 최대 동시 송출 가능한 채널 수는?", "a": "3개", "explain": "Standard 등급은 최대 3개, Professional 등급은 최대 5개까지 동시 송출이 가능합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-1. 증강현실 실시간 서비스 구성", "num": 16, "q": "물리 계층(1계층) 장비로, 신호가 약해지기 전에 수신하여 원래 형태로 보상하고 재전송하는 장비는?", "a": "리피터", "explain": "리피터는 물리 계층에서 신호의 세기를 증폭하고 복원하는 역할을 합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-1. 증강현실 실시간 서비스 구성", "num": 17, "q": "데이터 링크 계층(2계층) 장비로, 패킷의 물리 주소(MAC)를 검사하여 데이터 기능이 있는 장비는?", "a": "브리지", "explain": "브리지는 2계층 장비로, 목적지 주소를 검사하여 패킷을 전달하거나 폐기할 수 있습니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-1. 증강현실 실시간 서비스 구성", "num": 18, "q": "서로 다른 네트워크 간에 이동하기 위해 반드시 통과해야 하는 관문 역할을 하는 장비는?", "a": "게이트웨이", "explain": "게이트웨이는 서로 다른 프로토콜이나 네트워크 체계를 가진 시스템 간의 통로 역할을 합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-1. 증강현실 실시간 서비스 구성", "num": 19, "q": "네트워크에서 광 통신망을 이용한 초고속 인터넷 서비스 장비를 통칭하는 용어는?", "a": "FTTx", "explain": "FTTx(Fiber To The x)는 광케이블을 가입자 인근까지 연결하는 기술 및 장비를 통칭합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-1. 증강현실 실시간 서비스 구성", "num": 20, "q": "주조정실 시스템 중 편성 스케줄 모니터링과 프로그램/장비 제어를 통합 관리하는 서버는?", "a": "SMC", "explain": "SMC(Schedule Monitoring & Control)는 편성 스케줄을 모니터링하고 제어하는 역할을 합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-1. 증강현실 실시간 서비스 구성", "num": 21, "q": "소규모 생방송에서 오디오 신호를 수집하고 적절히 조절하여 합치는 장비는?", "a": "오디오 믹서", "explain": "오디오 믹서는 마이크 등을 통해 들어온 여러 소리 신호를 조절하고 섞는 장치입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-1. 증강현실 실시간 서비스 구성", "num": 22, "q": "라이브 스테이션의 '녹화 저장 설정' 시 파일이 저장되는 클라우드 공간은?", "a": "Object Storage", "explain": "클라우드 서비스에서 녹화된 영상은 일반적으로 오브젝트 스토리지(Object Storage)에 저장됩니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-1. 증강현실 실시간 서비스 구성", "num": 23, "q": "라이브 스테이션의 상태 중 송출 상태를 일시적으로 차단(Block)했을 때 나타나는 상태는?", "a": "정지", "explain": "채널 Off 또는 블록 기능을 사용하면 '정지' 상태가 됩니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-1. 증강현실 실시간 서비스 구성", "num": 24, "q": "재스트림(Re-Stream) 설정 시 목적지 플랫폼에 접근 권한을 확인하기 위해 필요한 정보는?", "a": "스트림 키 또는 인증 정보", "explain": "플랫폼 송출을 위해서는 RTMP URL 외에도 스트림 키나 계정 인증 정보가 필요합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-1. 증강현실 실시간 서비스 구성", "num": 25, "q": "주조정실 시스템에서 송출 영상 소재(Material)를 관리하는 컴퓨터는?", "a": "MPC", "explain": "MPC(Material Preparation Computer)는 송출될 영상 소재를 준비하고 관리합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-1. 증강현실 실시간 서비스 구성", "num": 26, "q": "방송의 완성된 제작물과 부가 정보를 안정적으로 전달하기 위한 최종 통제소는?", "a": "주조정실", "explain": "주조정실은 방송 제작물을 최종적으로 시청자에게 보내기 전 관리하는 핵심 장소입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-1. 증강현실 실시간 서비스 구성", "num": 27, "q": "1인 미디어 방송에서 PC 성능에 따라 스트리밍 품질이 달라지는 주된 원인 과정은?", "a": "소프트웨어 인코딩", "explain": "라이브 스트리밍 소프트웨어를 통한 인코딩 작업은 PC의 CPU/GPU 자원을 많이 소모합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-1. 증강현실 실시간 서비스 구성", "num": 28, "q": "네트워크 장비 중 물리적 주소가 없으나 필터링 기능이 있어 패킷을 선별 전달하는 것은?", "a": "브리지", "explain": "브리지는 리피터와 달리 필터링 기능을 통해 지능적으로 패킷을 관리합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-1. 증강현실 실시간 서비스 구성", "num": 29, "q": "라이브 스테이션 채널 목록에서 확인할 수 없는 정보는?", "a": "시청자 개개인의 상세 개인정보", "explain": "채널 목록에서는 상태, 화질, 시간 등 운영 정보만 확인하며 시청자 개인정보는 노출되지 않습니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-1. 증강현실 실시간 서비스 구성", "num": 30, "q": "리피터(Repeater)가 신호를 재전송할 때 보상하는 물리적 단위는?", "a": "비트(Bit)", "explain": "리피터는 1계층 장비이므로 신호를 가장 작은 단위인 비트(Bit) 형태로 보상하여 재전송합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-2. 증강현실 실시간 서비스 송출 장비·구축", "num": 1, "q": "온라인 실시간 서비스의 특징 중 '공동의 관심사 토론'과 가장 밀접한 것은?", "a": "커뮤니티(Community)", "explain": "커뮤니티(Community)는 공동의 관심사를 가진 사람들이 모여 토론하는 특징을 의미합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-2. 증강현실 실시간 서비스 송출 장비·구축", "num": 2, "q": "증강현실 실시간 서비스 과정 중 촬영(라이브 제작) 직후에 수행하는 단계는?", "a": "인코딩", "explain": "서비스 과정은 촬영 후 인코딩을 거쳐 송출하는 순서로 진행됩니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-2. 증강현실 실시간 서비스 송출 장비·구축", "num": 3, "q": "여러 영상 소스 중 송출할 대상을 선택하고 장면 전환 효과를 부여하는 장비는?", "a": "비디오 스위처", "explain": "비디오 스위처는 입력 소스 선택 및 장면 전환(Transition) 효과를 제공합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-2. 증강현실 실시간 서비스 송출 장비·구축", "num": 4, "q": "비디오 스위처의 장면 전환 효과에 해당하지 않는 것은?", "a": "키어(Keyer)", "explain": "키어(Keyer)는 크로마키 등 합성 기능이며, 장면 전환 효과는 컷, 디졸브, 와이프 등이 있습니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-2. 증강현실 실시간 서비스 송출 장비·구축", "num": 5, "q": "영상과 혼합하여 자막이나 그래픽 콘텐츠를 송출할 때 사용하는 장비는?", "a": "CG", "explain": "문자 발생기(Character Generator)는 문자나 그래픽을 생성하여 영상과 혼합합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-2. 증강현실 실시간 서비스 송출 장비·구축", "num": 6, "q": "콘덴서 마이크 사용 시 오디오 믹서에서 공급해야 하는 직류 전압은?", "a": "DC +48V", "explain": "팬텀 파워(Phantom Power)는 일반적으로 DC +48V를 공급합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-2. 증강현실 실시간 서비스 송출 장비·구축", "num": 7, "q": "입력되는 2채널 신호 간 역상이 있을 때 위상을 180도 전환하는 스위치는?", "a": "위상 전환 스위치", "explain": "위상 전환 스위치는 신호의 위상을 180도 전환하여 역상 문제를 해결합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-2. 증강현실 실시간 서비스 송출 장비·구축", "num": 8, "q": "오디오 믹서에서 저음부의 불필요한 소음을 제거하기 위해 사용하는 필터는?", "a": "하이 패스 필터", "explain": "하이 패스 필터(Low Cut)는 특정 주파수(예: 100Hz) 이하의 저음역대를 차단합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-2. 증강현실 실시간 서비스 송출 장비·구축", "num": 9, "q": "오디오 채널의 음색을 조정하기 위해 고음, 중음, 저음 주파수를 선택하는 부분은?", "a": "EQ", "explain": "EQ(Equalizer)는 주파수 대역별로 볼륨을 조절하여 음색을 조정합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-2. 증강현실 실시간 서비스 송출 장비·구축", "num": 10, "q": "오디오의 스테레오 이미지를 조정하여 소리를 왼쪽이나 오른쪽으로 보내는 기능은?", "a": "팬 포트", "explain": "팬 포트(Pan Pot)는 스테레오 밸런스를 L(왼쪽) 또는 R(오른쪽)로 조절합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-2. 증강현실 실시간 서비스 송출 장비·구축", "num": 11, "q": "다른 채널에 영향을 주지 않고 해당 채널의 신호만 모니터링하기 위해 사용하는 스위치는?", "a": "솔로 스위치", "explain": "솔로 스위치를 켜면 다른 신호를 방해하지 않고 특정 채널만 들을 수 있습니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-2. 증강현실 실시간 서비스 송출 장비·구축", "num": 12, "q": "페이더의 위치와 상관없이 채널에 입력된 신호를 즉시 듣는 기능은?", "a": "PFL", "explain": "PFL은 페이더 전 단계의 신호를 모니터링하는 기능입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-2. 증강현실 실시간 서비스 송출 장비·구축", "num": 13, "q": "메인 믹스와 동일한 신호를 대기실 등 다른 장소로 보낼 때 주로 사용하는 출력은?", "a": "매트릭스 아웃", "explain": "매트릭스 아웃은 마스터 아웃과 동일한 신호를 다른 장소로 송출할 때 활용합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-2. 증강현실 실시간 서비스 송출 장비·구축", "num": 14, "q": "메인 믹스와 다른 별도의 오디오 밸런스가 필요할 때 사용하는 개별 출력은?", "a": "옥스 아웃", "explain": "Aux Out은 개별 레벨 조정이 필요한 별도의 출력을 생성할 때 사용됩니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-2. 증강현실 실시간 서비스 송출 장비·구축", "num": 15, "q": "오디오 믹서에서 실제 출력 단자는 없지만 여러 페이더를 묶어 제어하는 기능은?", "a": "VCA 그룹", "explain": "VCA 그룹은 페이더들을 논리적으로 묶어 볼륨을 통합 제어하며, 물리적 출력은 없습니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-2. 증강현실 실시간 서비스 송출 장비·구축", "num": 16, "q": "컨트롤 룸에서 스튜디오 안의 출연자에게 음성을 전달하기 위한 기능은?", "a": "Talkback", "explain": "토크백 기능은 제작진이 연주자나 출연자에게 지시를 내릴 때 사용됩니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-2. 증강현실 실시간 서비스 송출 장비·구축", "num": 17, "q": "음향 시스템 장비의 연결 상태를 체크하기 위해 사용하는 신호 발생기는?", "a": "오실레이터", "explain": "오실레이터는 시스템 점검용 테스트 톤(신호)을 발생시킵니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-2. 증강현실 실시간 서비스 송출 장비·구축", "num": 18, "q": "소리가 진동판을 울리면 코일이 움직여 전기 신호를 만드는 방식의 마이크는?", "a": "다이내믹 마이크", "explain": "다이내믹 마이크는 진동판과 코일의 움직임을 통해 신호를 생성합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-2. 증강현실 실시간 서비스 송출 장비·구축", "num": 19, "q": "모든 방향(360도)에서 들어오는 소리의 강도가 동일한 마이크 지향성은?", "a": "무지향성", "explain": "무지향성 마이크는 전 방향의 소리를 동일한 감도로 수음합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-2. 증강현실 실시간 서비스 송출 장비·구축", "num": 20, "q": "주로 마이크 정면의 소리에 가장 민감하게 반응하는 지향성 패턴은?", "a": "단일 지향성", "explain": "단일 지향성 마이크는 정면의 강도가 높고 뒷면의 강도는 낮습니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-2. 증강현실 실시간 서비스 송출 장비·구축", "num": 21, "q": "원격으로 팬(Pan), 틸트(Tilt), 줌(Zoom)을 조절할 수 있는 카메라는?", "a": "PTZ 카메라", "explain": "PTZ 카메라는 상하좌우 및 줌 제어가 원격으로 가능한 카메라입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-2. 증강현실 실시간 서비스 송출 장비·구축", "num": 22, "q": "비디오 스위처에서 현재 방송으로 나가는 영상을 지칭하는 용어는?", "a": "PGM", "explain": "PGM(Program)은 최종적으로 송출되는 영상 소스를 의미합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-2. 증강현실 실시간 서비스 송출 장비·구축", "num": 23, "q": "최신 비디오 플레이어에서 주로 사용하는 저장 매체는?", "a": "SSD", "explain": "현재의 비디오 플레이어는 SSD나 서버 저장 매체를 주로 활용합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-2. 증강현실 실시간 서비스 송출 장비·구축", "num": 24, "q": "오디오 믹서의 입력 모듈에서 음 소거를 위해 사용하는 스위치는?", "a": "뮤트 스위치", "explain": "뮤트 스위치는 해당 채널의 음을 즉시 소거(Mute)합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-2. 증강현실 실시간 서비스 송출 장비·구축", "num": 25, "q": "오디오 마스터 섹션의 마스터 아웃에 연결(Insert)하는 장비가 아닌 것은?", "a": "비디오 스위처", "explain": "비디오 스위처는 영상 장비이며, 마스터 오디오 인서트에는 오디오 시그널 프로세서들이 연결됩니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-2. 증강현실 실시간 서비스 송출 장비·구축", "num": 26, "q": "사용자가 정보를 공유하고 피드백을 촉진하는 온라인 실시간 서비스의 특징은?", "a": "공개 및 참여", "explain": "온라인 서비스는 공개(Openness)와 참여(Participation)를 통한 피드백과 공유를 지향합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-2. 증강현실 실시간 서비스 송출 장비·구축", "num": 27, "q": "오디오 믹서의 논리니어(Non-linear) 편집 시스템에 통합된 자막 처리 방식은?", "a": "소프트웨어 방식 CG", "explain": "소프트웨어 방식 CG는 편집 소프트웨어 내에서 자막을 처리하는 방식입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-2. 증강현실 실시간 서비스 송출 장비·구축", "num": 28, "q": "마이크 수음 시 소리의 위상이 180도 차이 나는 현상을 지칭하는 용어는?", "a": "역상", "explain": "신호가 반대로 입력되는 것을 역상이라 하며, 이를 위상 전환 스위치로 해결합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-2. 증강현실 실시간 서비스 송출 장비·구축", "num": 29, "q": "오디오 믹서의 모니터 섹션에서 신호의 레벨을 급격히 줄일 때 사용하는 스위치는?", "a": "딤", "explain": "Dim 스위치는 모니터링 음량을 일시적으로 일정 수준 낮추는 역할을 합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-2. 증강현실 실시간 서비스 송출 장비·구축", "num": 30, "q": "증강현실 실시간 서비스 송출 제작을 위한 모든 설비와 장비를 통칭하는 것은?", "a": "제작 장비", "explain": "제작 장비는 촬영, 영상, 음향, 컴퓨터 등 모든 설비를 포함하는 개념입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-3. 증강현실 실시간 서비스 송출", "num": 1, "q": "다음 중 라이브 스트리밍을 진행하기 위해 사용하는 범용 소프트웨어 인코더가 아닌 것은?", "a": "Adobe Photoshop", "explain": "FMLE, Wirecast, OBS는 범용 소프트웨어 인코더이나 포토샵은 이미지 편집 도구입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-3. 증강현실 실시간 서비스 송출", "num": 2, "q": "FMLE 인코더 설정 시 비디오 포맷(Format)으로 권장되는 규격은?", "a": "H.264", "explain": "라이브 스트리밍을 위한 비디오 설정 시 포맷은 H.264를 주로 사용합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-3. 증강현실 실시간 서비스 송출", "num": 3, "q": "FMLE 및 범용 인코더에서 오디오 포맷(Format)으로 가장 많이 사용되는 규격은?", "a": "AAC", "explain": "라이브 송출 시 오디오 포맷은 효율이 높은 AAC를 권장합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-3. 증강현실 실시간 서비스 송출", "num": 4, "q": "안정적인 송출을 위해 인코더에서 설정하는 일반적인 프레임 레이트(Frame Rate)는?", "a": "30fps", "explain": "스트리밍 인코더의 표준적인 프레임 레이트 설정값은 30fps입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-3. 증강현실 실시간 서비스 송출", "num": 5, "q": "FMLE 오디오 설정 시 권장되는 샘플 레이트(Sample Rate) 값은?", "a": "44.1kHz", "explain": "라이브 스트리밍 오디오 설정 시 기본 샘플 레이트는 44.1kHz로 설정합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-3. 증강현실 실시간 서비스 송출", "num": 6, "q": "다음 중 다양한 입력 소스를 실시간으로 믹싱하고 방송 자막 효과를 줄 수 있는 유료 인코더는?", "a": "Wirecast", "explain": "Wirecast는 실시간 영상 믹싱과 자막 처리가 가능한 전문 유료 인코딩 소프트웨어입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-3. 증강현실 실시간 서비스 송출", "num": 7, "q": "오픈 소스 소프트웨어로 무료이며, 장면(Scene)과 소스(Source) 관리 기능이 뛰어난 인코더는?", "a": "OBS", "explain": "OBS(Open Broadcaster Software)는 강력한 무료 오픈 소스 스트리밍 소프트웨어입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-3. 증강현실 실시간 서비스 송출", "num": 8, "q": "모바일 기기와 PC 간의 연동이 쉽고 다양한 이용 필터 기능을 제공하는 인코더는?", "a": "PRISM Live Studio", "explain": "PRISM Live Studio는 모바일 연동 및 다양한 효과(필터)를 제공하는 특징이 있습니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-3. 증강현실 실시간 서비스 송출", "num": 9, "q": "하이엔드급 라이브 프로덕션 기능을 제공하며 4K 송출과 멀티 뷰어를 지원하는 인코더는?", "a": "vMix", "explain": "vMix는 고성능 방송 제작 환경을 지원하는 전문 인코더입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-3. 증강현실 실시간 서비스 송출", "num": 10, "q": "생방송 송출 환경 중 가장 안정적인 전송을 보장하는 네트워크 환경은?", "a": "유선 LAN 환경", "explain": "무선 환경은 불안정하므로 가급적 유선 LAN 환경에서 송출하는 것이 가장 안정적입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-3. 증강현실 실시간 서비스 송출", "num": 11, "q": "업로드 대역폭 점검 시 방송 송출 비트 레이트(Bit Rate)와 대역폭의 올바른 관계는?", "a": "비트 레이트는 대역폭의 1/2를 넘지 않는 것이 좋다", "explain": "안정성을 위해 실제 송출 비트 레이트는 확보된 대역폭의 절반 이하로 설정하는 것이 권장됩니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-3. 증강현실 실시간 서비스 송출", "num": 12, "q": "720p(HD) 화질로 안정적인 생방송을 진행하기 위한 최소 업로드 속도는?", "a": "8Mbps", "explain": "720p 화질 송출을 위해서는 최소 8Mbps 이상의 업로드 대역폭이 필요합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-3. 증강현실 실시간 서비스 송출", "num": 13, "q": "송출 중 버퍼링이나 연결 끊김이 자주 발생할 때 조치 방법으로 옳은 것은?", "a": "비트 레이트와 해상도를 낮춘다", "explain": "네트워크 불안정 시에는 비트 레이트와 해상도를 낮추어 전송량을 줄여야 합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-3. 증강현실 실시간 서비스 송출", "num": 14, "q": "HD급 생방송 진행 시 인코딩과 겹쳐를 위해 시스템 리소스를 가장 많이 소모하는 부위는?", "a": "CPU", "explain": "HD 송출은 많은 연산이 필요하므로 상당히 많은 CPU 리소스를 사용합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-3. 증강현실 실시간 서비스 송출", "num": 15, "q": "영상 품질에 영향을 미치며, 이 값이 너무 크면 영상 품질이 저하될 수 있는 설정값은?", "a": "키 프레임 간격", "explain": "키 프레임 간격이 너무 크면 데이터 압축률은 높아지나 영상의 품질이 떨어질 수 있습니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-3. 증강현실 실시간 서비스 송출", "num": 16, "q": "라이브 스테이션 스트림 정보 중 인코더의 'URL' 항목에 입력해야 하는 정보는?", "a": "RTMP URL", "explain": "인코더의 URL 칸에는 라이브 스테이션에서 제공하는 RTMP URL을 입력합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-3. 증강현실 실시간 서비스 송출", "num": 17, "q": "라이브 스테이션에서 제공하는 고유한 암호화 값으로 인코더의 'Stream' 항목에 입력하는 것은?", "a": "스트림 키", "explain": "스트림 키는 각 방송 세션을 식별하고 인증하는 핵심 정보입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-3. 증강현실 실시간 서비스 송출", "num": 18, "q": "송출 중 인코더의 CPU 사용량이 너무 높을 때 해결 방법으로 적절한 것은?", "a": "프레임을 낮추어 인코딩한다", "explain": "CPU 부하를 줄이려면 프레임 레이트(fps)를 낮추거나 해상도를 낮춰야 합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-3. 증강현실 실시간 서비스 송출", "num": 19, "q": "FMLE 설정 중 비디오의 해상도를 결정하는 항목은?", "a": "Input Size", "explain": "Input Size 설정을 통해 송출할 영상의 가로, 세로 해상도를 지정합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-3. 증강현실 실시간 서비스 송출", "num": 20, "q": "FMLE 설정에서 전송률을 고정하고 크기를 유지하기 위해 선택하는 옵션은?", "a": "Fix Rate & Size", "explain": "일정한 송출 품질을 유지하기 위해 Fix Rate & Size 옵션을 사용합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-3. 증강현실 실시간 서비스 송출", "num": 21, "q": "모바일(3G/LTE) 환경에서 송출할 때의 주의사항으로 옳은 것은?", "a": "안정적인 송출을 보장할 수 없다", "explain": "이동통신망은 기지국 환경에 따라 대역폭 변화가 심해 안정적인 송출이 어렵습니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-3. 증강현실 실시간 서비스 송출", "num": 22, "q": "OBS 스튜디오에서 출력되는 최종 화면을 구성하기 위해 관리하는 두 가지 핵심 요소는?", "a": "장면과 소스", "explain": "OBS는 여러 '소스'를 모아 하나의 '장면'을 구성하는 방식으로 작동합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-3. 증강현실 실시간 서비스 송출", "num": 23, "q": "인코더 설정 시 오디오 채널(Channels) 설정의 표준은?", "a": "Stereo", "explain": "일반적인 라이브 스트리밍은 좌우 소리가 구분되는 Stereo 채널을 사용합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-3. 증강현실 실시간 서비스 송출", "num": 24, "q": "인코더 설정 중 오디오 전송 품질을 결정하는 'Bit Rate'의 일반적인 권장 값은?", "a": "128~192kbps", "explain": "오디오 품질을 위해 128kbps에서 192kbps 정도의 비트 레이트를 권장합니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-3. 증강현실 실시간 서비스 송출", "num": 25, "q": "다음 중 인코딩 과정에서 영상이 끊기거나 버퍼가 발생할 때 확인해야 할 요소가 아닌 것은?", "a": "키보드 반응 속도", "explain": "송출 끊김은 주로 네트워크(대역폭), 연산(CPU), 설정(비트레이트/프레임)의 문제입니다."}, {"subject": "2과목 증강현실 콘텐츠 제작", "unit": "04. 증강현실 실시간 서비스", "sub": "4-3. 증강현실 실시간 서비스 송출", "num": 26, "q": "증강현실 콘텐츠 송출 시 실제 카메라 영상에 가상 객체를 합성하는 주된 장소는?", "a": "인코더 소프트웨어 내부", "explain": "OBS나 Wirecast 같은 인코더 소프트웨어에서 가상 객체와 실제 영상을 합성하여 송출합니다."}];
+
+/* ---------- Build hierarchy ---------- */
+const hierarchy = {}; // subject -> unit -> sub -> [items]
+RAW_DATA.forEach((item, idx) => {
+  item._id = idx;
+  hierarchy[item.subject] = hierarchy[item.subject] || {};
+  hierarchy[item.subject][item.unit] = hierarchy[item.subject][item.unit] || {};
+  hierarchy[item.subject][item.unit][item.sub] = hierarchy[item.subject][item.unit][item.sub] || [];
+  hierarchy[item.subject][item.unit][item.sub].push(item);
+});
+
+let selectedScope = { type: 'all', label: '전체 문제' };
+let selectedDir = 'qa';
+let selectedShuffle = true;
+
+/* ---------- Render tree ---------- */
+const treeEl = document.getElementById('tree');
+document.getElementById('all-count').textContent = RAW_DATA.length + '문항';
+
+function countOf(obj){
+  // obj can be array (sub) or nested dict (unit/subject)
+  if(Array.isArray(obj)) return obj.length;
+  let c = 0;
+  Object.values(obj).forEach(v => c += countOf(v));
+  return c;
+}
+
+Object.keys(hierarchy).forEach(subject => {
+  const subjBlock = document.createElement('div');
+  subjBlock.className = 'subject-block';
+
+  const subjRow = document.createElement('div');
+  subjRow.className = 'node-row subject-row';
+  subjRow.innerHTML = `
+    <span class="chev">▶</span>
+    <span class="node-text">${subject}</span>
+    <span class="node-count">${countOf(hierarchy[subject])}문항</span>
+    <button class="node-pick" data-type="subject" data-subject="${subject}">이 범위</button>
+  `;
+  subjBlock.appendChild(subjRow);
+
+  const unitList = document.createElement('div');
+  unitList.className = 'unit-list';
+
+  Object.keys(hierarchy[subject]).forEach(unit => {
+    const unitRow = document.createElement('div');
+    unitRow.className = 'node-row unit-row';
+    unitRow.innerHTML = `
+      <span class="chev">▶</span>
+      <span class="node-text">${unit}</span>
+      <span class="node-count">${countOf(hierarchy[subject][unit])}문항</span>
+      <button class="node-pick" data-type="unit" data-subject="${subject}" data-unit="${unit}">이 범위</button>
+    `;
+    unitList.appendChild(unitRow);
+
+    const subList = document.createElement('div');
+    subList.className = 'sub-list';
+
+    Object.keys(hierarchy[subject][unit]).forEach(sub => {
+      const subRow = document.createElement('div');
+      subRow.className = 'node-row sub-row';
+      subRow.innerHTML = `
+        <span style="width:16px;"></span>
+        <span class="node-text">${sub}</span>
+        <span class="node-count">${hierarchy[subject][unit][sub].length}문항</span>
+        <button class="node-pick" data-type="sub" data-subject="${subject}" data-unit="${unit}" data-sub="${sub}">이 범위</button>
+      `;
+      subList.appendChild(subRow);
+    });
+
+    unitList.appendChild(subList);
+
+    unitRow.addEventListener('click', (e) => {
+      if(e.target.classList.contains('node-pick')) return;
+      unitRow.classList.toggle('open');
+      subList.classList.toggle('open');
+    });
+  });
+
+  subjBlock.appendChild(unitList);
+  treeEl.appendChild(subjBlock);
+
+  subjRow.addEventListener('click', (e) => {
+    if(e.target.classList.contains('node-pick')) return;
+    subjRow.classList.toggle('open');
+    unitList.classList.toggle('open');
+  });
+});
+
+/* ---------- Scope selection ---------- */
+function clearPickSelection(){
+  document.querySelectorAll('.node-pick.selected').forEach(b => b.classList.remove('selected'));
+  document.getElementById('all-btn').classList.remove('selected');
+}
+
+function getItemsForScope(scope){
+  if(scope.type === 'all') return RAW_DATA.slice();
+  if(scope.type === 'subject') return countGetSubject(scope.subject);
+  if(scope.type === 'unit') return countGetUnit(scope.subject, scope.unit);
+  if(scope.type === 'sub') return hierarchy[scope.subject][scope.unit][scope.sub].slice();
+  return [];
+}
+function countGetSubject(subject){
+  let arr = [];
+  Object.values(hierarchy[subject]).forEach(unit => {
+    Object.values(unit).forEach(sub => arr = arr.concat(sub));
+  });
+  return arr;
+}
+function countGetUnit(subject, unit){
+  let arr = [];
+  Object.values(hierarchy[subject][unit]).forEach(sub => arr = arr.concat(sub));
+  return arr;
+}
+
+function updateSelectionUI(){
+  const items = getItemsForScope(selectedScope);
+  document.getElementById('selection-summary').innerHTML =
+    `<b>${selectedScope.label}</b> · ${items.length}문항 선택됨`;
+  document.getElementById('start-btn').disabled = items.length === 0;
+}
+
+document.getElementById('all-btn').addEventListener('click', () => {
+  clearPickSelection();
+  document.getElementById('all-btn').classList.add('selected');
+  selectedScope = { type:'all', label:'전체 문제' };
+  updateSelectionUI();
+});
+
+treeEl.addEventListener('click', (e) => {
+  const btn = e.target.closest('.node-pick');
+  if(!btn) return;
+  clearPickSelection();
+  btn.classList.add('selected');
+  const type = btn.dataset.type;
+  if(type === 'subject'){
+    selectedScope = { type:'subject', subject:btn.dataset.subject, label: btn.dataset.subject };
+  } else if(type === 'unit'){
+    selectedScope = { type:'unit', subject:btn.dataset.subject, unit:btn.dataset.unit, label: btn.dataset.unit };
+  } else {
+    selectedScope = { type:'sub', subject:btn.dataset.subject, unit:btn.dataset.unit, sub:btn.dataset.sub, label: btn.dataset.sub };
+  }
+  updateSelectionUI();
+});
+
+document.getElementById('dir-qa').addEventListener('click', () => {
+  selectedDir = 'qa';
+  document.getElementById('dir-qa').classList.add('selected');
+  document.getElementById('dir-aq').classList.remove('selected');
+});
+document.getElementById('dir-aq').addEventListener('click', () => {
+  selectedDir = 'aq';
+  document.getElementById('dir-aq').classList.add('selected');
+  document.getElementById('dir-qa').classList.remove('selected');
+});
+
+document.getElementById('shuffle-on').addEventListener('click', () => {
+  selectedShuffle = true;
+  document.getElementById('shuffle-on').classList.add('selected');
+  document.getElementById('shuffle-off').classList.remove('selected');
+});
+document.getElementById('shuffle-off').addEventListener('click', () => {
+  selectedShuffle = false;
+  document.getElementById('shuffle-off').classList.add('selected');
+  document.getElementById('shuffle-on').classList.remove('selected');
+});
+
+/* ---------- default select "all" ---------- */
+document.getElementById('all-btn').classList.add('selected');
+updateSelectionUI();
+
+/* ---------- Study session ---------- */
+let deck = [];        // current round's items
+let results = {};     // id -> true(ok)/false(bad), for current full pool
+let idx = 0;
+let flipped = false;
+let poolItems = [];   // full pool for this scope (used for "retry all")
+
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function startSession(items){
+  poolItems = items;
+  deck = selectedShuffle ? shuffle(items) : items.slice();
+  results = {};
+  idx = 0;
+  document.getElementById('card-scope').textContent = selectedScope.label
+    + (selectedDir === 'qa' ? ' · 문제→정답' : ' · 정답→문제')
+    + (selectedShuffle ? ' · 랜덤 순서' : ' · 원래 순서');
+  showScreen('screen-study');
+  renderCard();
+}
+
+function renderCard(){
+  flipped = false;
+  const card = document.getElementById('flip-card');
+  card.classList.remove('flipped');
+  const item = deck[idx];
+
+  const frontIsQ = selectedDir === 'qa';
+  document.getElementById('front-kicker').textContent = frontIsQ ? '문제' : '정답';
+  document.getElementById('back-kicker').textContent = frontIsQ ? '정답' : '문제';
+  document.getElementById('front-text').textContent = frontIsQ ? item.q : item.a;
+  document.getElementById('back-text').textContent = frontIsQ ? item.a : item.q;
+  document.getElementById('back-explain').textContent = item.explain || '';
+
+  document.getElementById('progress-text').textContent = (idx+1) + ' / ' + deck.length;
+  document.getElementById('progress-fill').style.width = (100*(idx)/deck.length) + '%';
+}
+
+document.getElementById('flip-card').addEventListener('click', () => {
+  flipped = !flipped;
+  document.getElementById('flip-card').classList.toggle('flipped', flipped);
+});
+
+function judge(ok){
+  const item = deck[idx];
+  results[item._id] = ok;
+  if(idx < deck.length - 1){
+    idx++;
+    renderCard();
+  } else {
+    finishRound();
+  }
+}
+document.getElementById('judge-yes').addEventListener('click', () => judge(true));
+document.getElementById('judge-no').addEventListener('click', () => judge(false));
+
+document.addEventListener('keydown', (e) => {
+  if(!document.getElementById('screen-study').classList.contains('active')) return;
+  if(e.code === 'Space'){
+    e.preventDefault();
+    flipped = !flipped;
+    document.getElementById('flip-card').classList.toggle('flipped', flipped);
+  } else if(e.code === 'ArrowRight'){
+    judge(true);
+  } else if(e.code === 'ArrowLeft'){
+    judge(false);
+  }
+});
+
+function finishRound(){
+  document.getElementById('progress-fill').style.width = '100%';
+  const total = deck.length;
+  const okCount = Object.values(results).filter(v => v === true).length;
+  const badCount = Object.values(results).filter(v => v === false).length;
+  document.getElementById('result-total').textContent = total;
+  document.getElementById('result-ok').textContent = okCount;
+  document.getElementById('result-bad').textContent = badCount;
+  document.getElementById('retry-wrong').disabled = badCount === 0;
+  showScreen('screen-result');
+}
+
+document.getElementById('start-btn').addEventListener('click', () => {
+  const items = getItemsForScope(selectedScope);
+  if(items.length === 0) return;
+  startSession(items);
+});
+
+document.getElementById('quit-btn').addEventListener('click', () => {
+  showScreen('screen-setup');
+});
+document.getElementById('back-to-setup').addEventListener('click', () => {
+  showScreen('screen-setup');
+});
+document.getElementById('retry-all').addEventListener('click', () => {
+  startSession(poolItems);
+});
+document.getElementById('retry-wrong').addEventListener('click', () => {
+  const wrongIds = Object.keys(results).filter(id => results[id] === false).map(Number);
+  const wrongItems = poolItems.filter(it => wrongIds.includes(it._id));
+  if(wrongItems.length === 0) return;
+  startSession(wrongItems);
+});
+</script>
+</body>
+</html>
